@@ -39,6 +39,7 @@
 #include <tf/transform_listener.h>
 
 #include <math.h>
+#include <vector>
 
 using namespace std;
 
@@ -47,12 +48,14 @@ class ImageGrabber
 public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
-    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh, tf::Vector3 map_translation, tf::Quaternion map_quaternion);
+    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh);
 
     ORB_SLAM2::System* mpSLAM;
 };
 
 double orb_scale = 1.0;
+vector<double> orb_trans;
+vector<double> orb_quat;
 
 int main(int argc, char **argv)
 {
@@ -77,19 +80,15 @@ int main(int argc, char **argv)
 
 	cv::FileNode map_t_ = fsSettings["Map.translation"];
 	cv::FileNode map_q_ = fsSettings["Map.quaternion"];
-	double map_t[3];
-	double map_q[4];
 
-	int i=0;
-	for(cv::FileNodeIterator it = map_t_.begin(); it!=map_t_.end(); ++it, ++i)
-	    map_t[i] = (double)*it;
+	for(cv::FileNodeIterator it = map_t_.begin(); it!=map_t_.end(); ++it)
+	    orb_trans.push_back((double)*it);
 
-	i=0;
-	for(cv::FileNodeIterator it = map_q_.begin(); it!=map_q_.end(); ++it, ++i)
-	    map_q[i] = (double)*it;
+	for(cv::FileNodeIterator it = map_q_.begin(); it!=map_q_.end(); ++it)
+	    orb_quat.push_back((double)*it);
 
-	tf::Vector3 map_translation(map_t[0], map_t[1], map_t[2]);
-	tf::Quaternion map_quaternion(map_q[0], map_q[1], map_q[2], map_q[3]);
+	nh.setParam("orb_translation", orb_trans);
+	nh.setParam("orb_quaternion", orb_quat);
  
     ImageGrabber igb(&SLAM);
 
@@ -97,8 +96,7 @@ int main(int argc, char **argv)
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/pepper_robot/camera/depth/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
-    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2, 
-	   nh, map_translation, map_quaternion));
+    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2,nh));
 	
     ros::spin();
 
@@ -113,7 +111,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh, tf::Vector3 map_translation, tf::Quaternion map_quaternion)
+void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh)
 {
     // Copy the ros image message to cv::Mat.
     cv_bridge::CvImageConstPtr cv_ptrRGB;
@@ -141,23 +139,22 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     //mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
 
     cv::Mat pose = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
-
+ 
     if (pose.empty())
         return;
 
 	nh.getParam("orb_scale", orb_scale);
+	nh.getParam("orb_translation", orb_trans);
+	nh.getParam("orb_quaternion", orb_quat);
 
-	/* prev code */
-	// transform into right handed camera frame
 	tf::Matrix3x3 rh_cameraPose(pose.at<float>(0, 0), pose.at<float>(0, 2), pose.at<float>(0, 1),
 		-pose.at<float>(1, 0), -pose.at<float>(1, 2), -pose.at<float>(1, 1),
 		pose.at<float>(2, 0), pose.at<float>(2, 2), pose.at<float>(2, 1));
 
-	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3), -pose.at<float>(1, 3), pose.at<float>(2, 3));
+	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3)*orb_scale, -pose.at<float>(1, 3)*orb_scale, pose.at<float>(2, 3)*orb_scale);
 
 
-	/*tf::Matrix3x3 rh_cameraPose_T = rh_cameraPose.inverse();
-	tf::Vector3 pointing = rh_cameraPose_T.getColumn(2);
+/*	tf::Matrix3x3 rh_cameraPose_T = rh_cameraPose.inverse();
 	tf::Vector3 cameraPosition(
 	  - rh_cameraPose_T.getRow(0).dot(rh_cameraTranslation) * orb_scale,
 	  - rh_cameraPose_T.getRow(1).dot(rh_cameraTranslation) * orb_scale,
@@ -188,9 +185,20 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 	double roll = acos(xw[0]*xpan[0] + xw[1]*xpan[1] + xw[2]*xpan[2]); // inner product
 	if(xw[2]<0) roll = -roll;
 
-	tf::Quaternion quaternion(pan, tilt, roll);*/
+	tf::Matrix3x3 rotation(tf::Quaternion(pan, tilt, roll));
+        /*tf::Matrix3x3 rotation(
+            -rot_.getRow(0)[0], rot_.getRow(0)[1], rot_.getRow(0)[2],
+            -rot_.getRow(1)[0], rot_.getRow(1)[1], rot_.getRow(1)[2],
+            rot_.getRow(2)[0], -rot_.getRow(2)[1], -rot_.getRow(2)[2]);
+        tf::Matrix3x3 rotation270degZx(
+            0, 0, 1,
+            -1, 0, 0,
+            0, -1, 0);
+        rotation = rotation270degZx.inverse() * rotation;*/
 
 	static tf::TransformBroadcaster br;
+	tf::Vector3 map_translation(orb_trans[0], orb_trans[1], orb_trans[2]);
+	tf::Quaternion map_quaternion(orb_quat[0], orb_quat[1], orb_quat[2], orb_quat[3]);
 	tf::Transform transformMap = tf::Transform(map_quaternion, map_translation);
 	br.sendTransform(tf::StampedTransform(transformMap, ros::Time::now(), "map", "orb_map"));
 
