@@ -47,10 +47,12 @@ class ImageGrabber
 public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
-    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD);
+    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh, tf::Vector3 map_translation, tf::Quaternion map_quaternion);
 
     ORB_SLAM2::System* mpSLAM;
 };
+
+double orb_scale = 1.0;
 
 int main(int argc, char **argv)
 {
@@ -67,16 +69,37 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true, true);
 
+	ros::NodeHandle nh;
+
+	cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
+	orb_scale = (double) fsSettings["Map.scale"];
+	nh.setParam("orb_scale", orb_scale);
+
+	cv::FileNode map_t_ = fsSettings["Map.translation"];
+	cv::FileNode map_q_ = fsSettings["Map.quaternion"];
+	double map_t[3];
+	double map_q[4];
+
+	int i=0;
+	for(cv::FileNodeIterator it = map_t_.begin(); it!=map_t_.end(); ++it, ++i)
+	    map_t[i] = (double)*it;
+
+	i=0;
+	for(cv::FileNodeIterator it = map_q_.begin(); it!=map_q_.end(); ++it, ++i)
+	    map_q[i] = (double)*it;
+
+	tf::Vector3 map_translation(map_t[0], map_t[1], map_t[2]);
+	tf::Quaternion map_quaternion(map_q[0], map_q[1], map_q[2], map_q[3]);
+ 
     ImageGrabber igb(&SLAM);
 
-    ros::NodeHandle nh;
-
-    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/camera/rgb/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "camera/depth_registered/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/pepper_robot/camera/front/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/pepper_robot/camera/depth/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
-    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2));
-
+    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2, 
+	   nh, map_translation, map_quaternion));
+	
     ros::spin();
 
     // Stop all threads
@@ -90,7 +113,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD)
+void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh, tf::Vector3 map_translation, tf::Quaternion map_quaternion)
 {
     // Copy the ros image message to cv::Mat.
     cv_bridge::CvImageConstPtr cv_ptrRGB;
@@ -122,21 +145,23 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     if (pose.empty())
         return;
 
+	nh.getParam("orb_scale", orb_scale);
+
 	/* prev code */
 	// transform into right handed camera frame
-	tf::Matrix3x3 rh_cameraPose(-pose.at<float>(0, 0), pose.at<float>(0, 1), pose.at<float>(0, 2),
-		-pose.at<float>(1, 0), pose.at<float>(1, 1), pose.at<float>(1, 2),
-		pose.at<float>(2, 0), -pose.at<float>(2, 1), -pose.at<float>(2, 2));
+	tf::Matrix3x3 rh_cameraPose(pose.at<float>(0, 0), pose.at<float>(0, 2), pose.at<float>(0, 1),
+		-pose.at<float>(1, 0), -pose.at<float>(1, 2), -pose.at<float>(1, 1),
+		pose.at<float>(2, 0), pose.at<float>(2, 2), pose.at<float>(2, 1));
 
-	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3), pose.at<float>(1, 3), -pose.at<float>(2, 3));
+	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3), -pose.at<float>(1, 3), pose.at<float>(2, 3));
 
 
-	tf::Matrix3x3 rh_cameraPose_T = rh_cameraPose.inverse();
+	/*tf::Matrix3x3 rh_cameraPose_T = rh_cameraPose.inverse();
 	tf::Vector3 pointing = rh_cameraPose_T.getColumn(2);
 	tf::Vector3 cameraPosition(
-	  - rh_cameraPose_T.getRow(0).dot(rh_cameraTranslation),
-	  - rh_cameraPose_T.getRow(1).dot(rh_cameraTranslation),
-	  - rh_cameraPose_T.getRow(2).dot(rh_cameraTranslation)
+	  - rh_cameraPose_T.getRow(0).dot(rh_cameraTranslation) * orb_scale,
+	  - rh_cameraPose_T.getRow(1).dot(rh_cameraTranslation) * orb_scale,
+	  - rh_cameraPose_T.getRow(2).dot(rh_cameraTranslation) * orb_scale 
 	);
 	  
 	cv::Mat R_inv = (cv::Mat_<double>(3, 3) << 
@@ -163,20 +188,23 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 	double roll = acos(xw[0]*xpan[0] + xw[1]*xpan[1] + xw[2]*xpan[2]); // inner product
 	if(xw[2]<0) roll = -roll;
 
-	tf::Quaternion quaternion(pan, tilt, roll);
+	tf::Quaternion quaternion(pan, tilt, roll);*/
+
+	static tf::TransformBroadcaster br;
+	tf::Transform transformMap = tf::Transform(map_quaternion, map_translation);
+	br.sendTransform(tf::StampedTransform(transformMap, ros::Time::now(), "map", "orb_map"));
 
 	//rotate 270deg about z and 270deg about x
-	tf::Matrix3x3 rotation270degZX(0, 0, 1,
+	/*tf::Matrix3x3 rotation270degZX(0, 0, 1,
 									-1, 0, 0,
-									0, -1, 0);
+									0, -1, 0);*/
 
 	//publish right handed, x forward, y right, z down (NED)
-	static tf::TransformBroadcaster br;
 	//tf::Transform transformCoordSystem = tf::Transform(rotation270degZX, tf::Vector3(0.0, 0.0, 0.0));
 	//br.sendTransform(tf::StampedTransform(transformCoordSystem, ros::Time::now(), "asdf", "orb_map"));
 
-	tf::Transform transformCamera = tf::Transform(quaternion, cameraPosition);
-	br.sendTransform(tf::StampedTransform(transformCamera, ros::Time::now(), "orb_map", "orb_pose"));
+	tf::Transform transformCamera = tf::Transform(rh_cameraPose, rh_cameraTranslation);
+	br.sendTransform(tf::StampedTransform(transformCamera.inverse(), ros::Time::now(), "orb_map", "orb_pose"));
 
 /*
 	

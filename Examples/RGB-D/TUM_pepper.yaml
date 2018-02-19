@@ -77,5 +77,6 @@ Viewer.ViewpointF: 500
 # Map Parapeters
 #--------------------------------------------------------------------------------------------
 Map.mapfile: map.bin
-
-
+Map.scale: 1.0
+Map.translation: [0.0, 0.0, 0.0]
+Map.quaternion: [0.0, 0.0, 0.0, 1.0]
