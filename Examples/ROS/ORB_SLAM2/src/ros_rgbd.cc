@@ -205,9 +205,10 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 	tf::TransformListener listener_link;
 	tf::StampedTransform transform_link;
 	try {
+		listener_link.waitForTransform("/CameraTop_optical_frame", "/base_link", ros::Time(0), ros::Duration(10.0));
 		listener_link.lookupTransform("/CameraTop_optical_frame", "/base_link", ros::Time(0), transform_link);
-		transform_link.frame_id_ = "/orb_pose";
-		transform_link.child_frame_id_ = "/orb_base_link";
+		transform_link.frame_id_ = "orb_pose";
+		transform_link.child_frame_id_ = "orb_base_link";
 		br.sendTransform(transform_link);
 	}
 	catch (tf::TransformException ex) {
