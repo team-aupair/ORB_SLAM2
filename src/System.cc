@@ -341,10 +341,10 @@ void System::Shutdown()
     {
         std::this_thread::sleep_for(std::chrono::microseconds(5000));
     }
-    if(mpViewer)
-        pangolin::BindToContext("ORB-SLAM2: Map Viewer");
     if (is_save_map)
-        SaveMap(mapfile);
+        SaveMap(mapfile);	
+    if(mpViewer);
+        //pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 }
 
 void System::SaveTrajectoryTUM(const string &filename)
