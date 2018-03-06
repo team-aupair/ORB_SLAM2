@@ -40,6 +40,9 @@
 
 #include <math.h>
 #include <vector>
+#include <signal.h>
+
+volatile sig_atomic_t flag = 0;
 
 using namespace std;
 
@@ -56,6 +59,10 @@ public:
 double orb_scale = 1.0;
 vector<double> orb_trans;
 vector<double> orb_quat;
+
+void keyboard_inturrupt(int sig){
+    flag = 1;
+}
 
 int main(int argc, char **argv)
 {
@@ -97,11 +104,19 @@ int main(int argc, char **argv)
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2,nh));
-	
-    ros::spin();
 
+    signal(SIGINT, keyboard_inturrupt);
+
+    ros::Rate r(10);
+    
+    while (flag == 0){
+        ros::spinOnce();        
+	r.sleep();
+    }
+    cout << "OUT!" << endl;
     // Stop all threads
     SLAM.Shutdown();
+    cout << "MAP SAVED!" << endl;
 
     // Save camera trajectory
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
