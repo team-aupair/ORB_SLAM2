@@ -96,3 +96,11 @@ target_link_libraries(RGBD
 ${LIBS}
 )
 
+# Node for RVIZ MAP
+rosbuild_add_executable(MAP
+src/ros_draw_map.cc
+)
+
+target_link_libraries(MAP
+${LIBS}
+)

@@ -121,6 +121,9 @@ public:
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
+	// ADDED
+	Map* getMap();
+
 private:
     // Save/Load functions
     void SaveMap(const string &filename);
