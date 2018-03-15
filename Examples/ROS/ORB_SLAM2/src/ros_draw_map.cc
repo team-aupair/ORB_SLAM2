@@ -18,6 +18,7 @@
 #include "tf/transform_datatypes.h"
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 #include <math.h>
 #include <vector>
@@ -33,7 +34,7 @@ float u = 0.0;
 float b = 0.0;
 bool flag = true;
 
-int threshold = 3;
+int threshold = 5;
 float size = 0.01;
 
 void publish_points(visualization_msgs::Marker& points, float x, float y, float z)
@@ -70,32 +71,53 @@ void make_map(std::vector<std::vector<int>>& map_matrix, float x, float y, float
 	geometry_msgs::Point p;
 	int map_x = (int) ((transformed_pose.getX() - l) / size);
 	int map_y = (int) ((transformed_pose.getY() - b) / size);
+//	std::cout << map_x << ", " << map_y << std::endl;
 
 	for(int i=-2; i<3; i++){
-		if (map_y+i < 0 || map_y+i > (int)((u-b) / size )+1 )
+		if (map_y+i < 0 || map_y+i >= (int)((u-b) / size )+1 )
 			continue;
 		for(int j=-2; j<3; j++){
-			if (map_x+j < 0 || map_x+j > (int)((r-l) / size )+1 )
+			if (map_x+j < 0 || map_x+j >= (int)((r-l) / size )+1 )
 				continue;
 			map_matrix[map_y+i][map_x+j] += 1;
 		}
 	}
 }
 
-void publish_map(visualization_msgs::Marker& map, std::vector<std::vector<int>>& map_matrix, int rows, int cols)
+void publish_map(visualization_msgs::Marker& map, nav_msgs::OccupancyGrid& grid_map, std::vector<std::vector<int>>& map_matrix, int rows, int cols)
 {
+	int index = 0;
+	grid_map.header.frame_id = "/map";
+	grid_map.info.resolution = size;
+	grid_map.info.width = cols;
+	grid_map.info.height = rows;
+	grid_map.info.origin.position.x = l;
+	grid_map.info.origin.position.y = b;
+	grid_map.info.origin.position.z = 0.0;
+	grid_map.info.origin.orientation.x = 0.0;
+	grid_map.info.origin.orientation.y = 0.0;
+	grid_map.info.origin.orientation.z = 0.0;
+	grid_map.info.origin.orientation.w = 1.0;
+	grid_map.data.resize(cols*rows);
+
 	for(int i=0; i<rows; i++){
 		for(int j=0; j<cols; j++){
 			geometry_msgs::Point p;
 			std_msgs::ColorRGBA c;
 			p.x = l + j * size;
 			p.y = b + i * size;
-			c.a = 1.0;
-			if(map_matrix[i][j] >= threshold) {
+			p.z = 0.0;
+			if(map_matrix[i][j] >= threshold){
 				c.r = c.g = c.b = 0.0;
+				grid_map.data[index] = 100;
 			}
-			else
+			else{
 				c.r = c.g = c.b = 1.0;
+				grid_map.data[index] = 0;
+			}
+			c.a = 1.0;
+			index++;
+
 			map.points.push_back(p);
 			map.colors.push_back(c);
 		}
@@ -110,7 +132,9 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 	ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker> ("map_marker", 10);
 	ros::Publisher maker_pub = nh.advertise<visualization_msgs::Marker> ("map_maker", 10);
-	ros::Rate rate(30);
+	ros::Publisher map_pub = nh.advertise<nav_msgs::OccupancyGrid> ("/map", 10);
+	ros::Rate rate(1000);
+	nav_msgs::OccupancyGrid grid_map;
 
 	if(argc != 3)
 	{
@@ -135,13 +159,25 @@ int main(int argc, char **argv)
 	map.action = visualization_msgs::Marker::ADD;
 	map.pose.orientation.w = 1.0;
 	map.id = 1;
-	map.type = visualization_msgs::Marker::POINTS;
+	map.type = visualization_msgs::Marker::CUBE_LIST;
 	map.scale.x = 0.01;
 	map.scale.y = 0.01;
-	map.color.r = 1.0f;
-	map.color.g = 1.0f;
-	map.color.b = 1.0f;
+	map.scale.z = 0.001;
+	map.color.r = 0.0f;
+	map.color.g = 0.0f;
+	map.color.b = 0.0f;
 	map.color.a = 1.0;
+
+	/*visualization_msgs::Marker map_back;
+	map_back.header.frame_id = "/map";
+	map_back.action = visualization_msgs::Marker::ADD;
+	map_back.pose.orientation.w = 1.0;
+	map_back.id = 2;
+	map_back.type = visualization_msgs::Marker::CUBE;
+	map_back.color.r = 1.0f;
+	map_back.color.g = 1.0f;
+	map_back.color.b = 1.0f;
+	map_back.color.a = 1.0;*/
 
 	vector<double> orb_trans;
 	vector<double> orb_quat;
@@ -183,17 +219,24 @@ int main(int argc, char **argv)
 		cv::Mat pos = vpMPs[i]->GetWorldPos();
 		publish_points(points, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
 	}
-
 	u-=23;
 	b+=25;
 	r-=10;
 	l+=6;
 
-	std::vector<std::vector<int>> map_matrix;
+	/*map_back.scale.x = r-l;
+	map_back.scale.y = u-b;
+	map_back.scale.z = 0.001;
+	map_back.pose.position.x = (r+l)/2;
+	map_back.pose.position.y = (u+b)/2;
+	map_back.pose.position.z = -0.001;*/
+
+
 	int cols = (int)((r-l) / size)+1;
 	int rows = (int)((u-b) / size)+1;
 	std::cout << "rows: " << rows << " | cols: " << cols << std::endl;
-	map_matrix.resize(rows, std::vector<int>(cols, 0));
+	std::vector<std::vector<int>> map_matrix(rows, std::vector<int>(cols));
+	//map_matrix.resize(rows, std::vector<int>(cols, 0));
 
 	for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
 	{
@@ -203,16 +246,20 @@ int main(int argc, char **argv)
 		make_map(map_matrix, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
 	}
 
-	publish_map(map, map_matrix, rows, cols);
+	publish_map(map, grid_map, map_matrix, rows, cols);
 
 	points.header.stamp = ros::Time::now();
-	map.header.stamp = ros::Time::now();
 	marker_pub.publish(points);
-	maker_pub.publish(map);
 
+	std::cout << grid_map.info.origin.position << std::endl;
 	while (ros::ok())
 	{
 		rate.sleep();
+		map.header.stamp = ros::Time::now();
+		maker_pub.publish(map);
+		grid_map.header.stamp = ros::Time::now();
+		map_pub.publish(grid_map);
+		//maker_pub.publish(map_back);
 	}
 
 	SLAM.Shutdown();
