@@ -28,6 +28,7 @@
 #include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
 
 #include<stdint-gcc.h>
+#include <bitset>
 
 using namespace std;
 
@@ -1661,7 +1662,11 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
         dist += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
     }
 
-    return dist;
+    const uchar val_a = *pa;
+    const uchar val_b = *pb;
+    if(val_a == 0 || val_b == 0) return dist;
+    if(val_a == val_b) return dist >> 1;
+    return dist << 1;
 }
 
 } //namespace ORB_SLAM
