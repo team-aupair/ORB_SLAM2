@@ -48,6 +48,11 @@ ${PROJECT_SOURCE_DIR}/../../../include
 ${Pangolin_INCLUDE_DIRS}
 )
 
+#set(YOUR_LIB_SOURCES
+#    ~/catkin_ws/devel/include/pepper_obj_msgs/objs.h
+#    ~/catkin_ws/devel/include/pepper_obj_msgs/objs_array.h)
+#add_library(your_library ${YOUR_LIB_SOURCES})
+
 set(LIBS 
 ${OpenCV_LIBS} 
 ${EIGEN3_LIBS}
@@ -57,6 +62,8 @@ ${PROJECT_SOURCE_DIR}/../../../Thirdparty/g2o/lib/libg2o.so
 ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
 -lboost_system
 )
+
+MESSAGE("LIBS: " ${LIBS})
 
 # Node for monocular camera
 rosbuild_add_executable(Mono

@@ -45,6 +45,8 @@
 #include <signal.h>
 #include <visualization_msgs/Marker.h>
 
+#include "pepper_obj_msgs/objs_array.h"
+
 volatile sig_atomic_t flag = 0;
 double orb_scale = 1.0;
 vector<double> orb_trans;
@@ -56,6 +58,8 @@ ORB_SLAM2::Map* mpMap;
 const int map_update_rate = 5;
 int update_counter = map_update_rate;
 
+typedef boost::shared_ptr< ::pepper_obj_msgs::objs_array const> ObjConstPtr;
+
 using namespace std;
 
 class ImageGrabber
@@ -63,7 +67,7 @@ class ImageGrabber
 public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
-    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh, ros::Publisher marker_pub);
+    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD,const ObjConstPtr& msgC, ros::NodeHandle& nh, ros::Publisher& marker_pub);
 
     ORB_SLAM2::System* mpSLAM;
 };
@@ -117,7 +121,7 @@ void get_map_points(visualization_msgs::Marker& points)
 			continue;
 		cv::Mat pos = vpMPs[i]->GetWorldPos();
 		publish_points(points, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
-	
+
 	}
 }
 
@@ -128,10 +132,10 @@ int main(int argc, char **argv)
 
     if(argc != 3)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;        
+        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;
         ros::shutdown();
         return 1;
-    }    
+    }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
 	ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true, true);
@@ -156,21 +160,22 @@ int main(int argc, char **argv)
 	nh.setParam("orb_quaternion", orb_quat);
 
 	ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker> ("map_marker", 10);
- 
+
     ImageGrabber igb(&SLAM);
 
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/pepper_robot/camera/front/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/pepper_robot/camera/depth/image_raw", 1);
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
-    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
-    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2,nh,marker_pub));
+    message_filters::Subscriber<pepper_obj_msgs::objs_array> caption_sub(nh, "/objects", 1);
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, pepper_obj_msgs::objs_array> sync_pol;
+    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub,caption_sub);
+    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2,_3,nh,marker_pub));
 
     signal(SIGINT, keyboard_inturrupt);
 
     ros::Rate r(10);
-    
+
     while (flag == 0){
-        ros::spinOnce();        
+        ros::spinOnce();
 	r.sleep();
     }
     cout << "OUT!" << endl;
@@ -186,7 +191,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, ros::NodeHandle& nh, ros::Publisher marker_pub)
+void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD, const ObjConstPtr& msgC, ros::NodeHandle& nh, ros::Publisher& marker_pub)
 {
     // Copy the ros image message to cv::Mat.
     cv_bridge::CvImageConstPtr cv_ptrRGB;
@@ -214,9 +219,11 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     //mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
 
     cv::Mat pose = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
- 
+
     if (pose.empty())
         return;
+    //if( sizeof(msgC.objects) > 0)
+      //cout << msgC.objects[0].class_string << endl;
 
 	nh.getParam("orb_scale", orb_scale);
 	nh.getParam("orb_translation", orb_trans);
@@ -233,12 +240,12 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 	tf::Vector3 cameraPosition(
 	  - rh_cameraPose_T.getRow(0).dot(rh_cameraTranslation) * orb_scale,
 	  - rh_cameraPose_T.getRow(1).dot(rh_cameraTranslation) * orb_scale,
-	  - rh_cameraPose_T.getRow(2).dot(rh_cameraTranslation) * orb_scale 
+	  - rh_cameraPose_T.getRow(2).dot(rh_cameraTranslation) * orb_scale
 	);
-	  
-	cv::Mat R_inv = (cv::Mat_<double>(3, 3) << 
-	   rh_cameraPose_T.getRow(0)[0], rh_cameraPose_T.getRow(0)[1], rh_cameraPose_T.getRow(0)[2], 
-	   rh_cameraPose_T.getRow(1)[0], rh_cameraPose_T.getRow(1)[1], rh_cameraPose_T.getRow(1)[2], 
+
+	cv::Mat R_inv = (cv::Mat_<double>(3, 3) <<
+	   rh_cameraPose_T.getRow(0)[0], rh_cameraPose_T.getRow(0)[1], rh_cameraPose_T.getRow(0)[2],
+	   rh_cameraPose_T.getRow(1)[0], rh_cameraPose_T.getRow(1)[1], rh_cameraPose_T.getRow(1)[2],
 	   rh_cameraPose_T.getRow(2)[0], rh_cameraPose_T.getRow(2)[1], rh_cameraPose_T.getRow(2)[2]);
 
 	// pan(yaw) & tilt(pitch)
@@ -319,5 +326,3 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 		update_counter = 1;
 	}
 }
-
-
