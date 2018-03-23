@@ -1665,7 +1665,9 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
     const uchar val_a = *pa;
     const uchar val_b = *pb;
     if(val_a == 0 || val_b == 0) return dist;
-    if(val_a == val_b) return dist >> 1;
+    if(val_a == val_b) {
+      return dist >> 2;
+    }
     return dist << 1;
 }
 
