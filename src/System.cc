@@ -1,3 +1,4 @@
+
 /**
 * This file is part of ORB-SLAM2.
 *
@@ -189,7 +190,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
     return Tcw;
 }
 
-cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp)
+cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const cv::Mat &objmap, const double &timestamp)
 {
     if(mSensor!=RGBD)
     {
@@ -231,7 +232,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     }
     }
 
-    cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,timestamp);
+    cv::Mat Tcw = mpTracker->GrabImageRGBD(im,depthmap,objmap,timestamp);
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
@@ -342,7 +343,7 @@ void System::Shutdown()
         std::this_thread::sleep_for(std::chrono::microseconds(5000));
     }
     if (is_save_map)
-        SaveMap(mapfile);	
+        SaveMap(mapfile);
     if(mpViewer);
         //pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 }

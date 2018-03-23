@@ -46,6 +46,7 @@
 #include <visualization_msgs/Marker.h>
 
 #include "pepper_obj_msgs/objs_array.h"
+#include "pepper_obj_msgs/objs.h"
 
 volatile sig_atomic_t flag = 0;
 double orb_scale = 1.0;
@@ -76,9 +77,9 @@ void keyboard_inturrupt(int sig){
     flag = 1;
 }
 
-void publish_points(visualization_msgs::Marker& points, float x, float y, float z)
+void publish_points(visualization_msgs::Marker& points, float x, float y, float z, unsigned char s)
 {
-	tf::Vector3 pose(x*orb_scale, z*orb_scale, y*orb_scale);
+	tf::Vector3 pose(x*orb_scale, z*orb_scale, -y*orb_scale);
 	tf::Vector3 transformed_pose = map_transform * pose;
 
 	geometry_msgs::Point p;
@@ -86,6 +87,40 @@ void publish_points(visualization_msgs::Marker& points, float x, float y, float 
 	p.y = (float) transformed_pose.getY();
 	p.z = (float) transformed_pose.getZ();
 	points.points.push_back(p);
+
+  std_msgs::ColorRGBA c;
+  if(s == 1){
+    c.r = 1.0;
+    c.g = 0.0;
+    c.b = 0.0;
+  }
+  else if(s == 2){
+    c.r = 0.0;
+    c.g = 1.0;
+    c.b = 0.0;
+  }
+  else if(s == 3){
+    c.r = 0.0;
+    c.g = 0.0;
+    c.b = 1.0;
+  }
+  else if(s == 4){
+    c.r = 1.0;
+    c.g = 1.0;
+    c.b = 0.0;
+  }
+  else if(s == 5){
+    c.r = 1.0;
+    c.g = 0.0;
+    c.b = 1.0;
+  }
+  else{
+    c.r = 0.0;
+    c.g = 1.0;
+    c.b = 1.0;
+  }
+  c.a = 1.0;
+  points.colors.push_back(c);
 }
 
 void get_map_points(visualization_msgs::Marker& points)
@@ -120,9 +155,27 @@ void get_map_points(visualization_msgs::Marker& points)
 		if(vpMPs[i]->isBad())
 			continue;
 		cv::Mat pos = vpMPs[i]->GetWorldPos();
-		publish_points(points, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
-
+    cv::Mat dcptr = vpMPs[i]->GetDescriptor();
+		publish_points(points, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2), dcptr.at<unsigned char>(32));
 	}
+}
+
+cv::Mat getObjImg(cv::Mat& img, vector<pepper_obj_msgs::objs>& obj_list)
+{
+  for(int i=0; i<obj_list.size(); i++)
+  {
+    pepper_obj_msgs::objs obj = obj_list[i];
+    int color = 0;
+
+    if (obj.class_string == "person") color = 1;
+    else if (obj.class_string == "bottle" || obj.class_string == "coke" || obj.class_string == "green tea" || obj.class_string == "aquarius") color = 2;
+    else if (obj.class_string == "chair" || obj.class_string == "table" || obj.class_string == "diningtable") color = 3;
+    else if (obj.class_string == "tvmonitor" || obj.class_string == "keyboard" || obj.class_string == "clock") color = 4;
+    else if (obj.class_string == "sofa" || obj.class_string == "refrigerator") color = 5;
+
+    cv::Rect rc(obj.y,obj.x,obj.w,obj.h);
+    cv::rectangle(img, rc, color, CV_FILLED);	// filled rectangle
+  }
 }
 
 int main(int argc, char **argv)
@@ -217,13 +270,13 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     }
 
     //mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
-
-    cv::Mat pose = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
+    vector<pepper_obj_msgs::objs> obj_list =  msgC->objects;
+    cv::Mat objmap = cv::Mat::zeros(cv_ptrRGB->image.rows, cv_ptrRGB->image.cols, CV_8UC1);
+    getObjImg(objmap, obj_list);
+    cv::Mat pose = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image, objmap, cv_ptrRGB->header.stamp.toSec());
 
     if (pose.empty())
         return;
-    //if( sizeof(msgC.objects) > 0)
-      //cout << msgC.objects[0].class_string << endl;
 
 	nh.getParam("orb_scale", orb_scale);
 	nh.getParam("orb_translation", orb_trans);
