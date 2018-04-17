@@ -168,7 +168,7 @@ cv::Mat getObjImg(cv::Mat& img, vector<pepper_obj_msgs::objs>& obj_list)
         int color = 0;
 
         if (obj.class_string == "person") color = 1;
-        else if (obj.class_string == "bottle" || obj.class_string == "coke" || obj.class_string == "green tea" || obj.class_string == "aquarius") color = 2;
+        else if (obj.class_string == "bottle" || obj.class_string == "coke" || obj.class_string == "green tea" || obj.class_string == "aquarius" || obj.class_string == "coldbrew") color = 2;
         else if (obj.class_string == "chair" || obj.class_string == "table" || obj.class_string == "diningtable") color = 3;
         else if (obj.class_string == "tvmonitor" || obj.class_string == "keyboard" || obj.class_string == "clock") color = 4;
         else if (obj.class_string == "sofa" || obj.class_string == "refrigerator") color = 5;
@@ -293,11 +293,11 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
   	nh.getParam("orb_translation", orb_trans);
   	nh.getParam("orb_quaternion", orb_quat);
 
-  	tf::Matrix3x3 rh_cameraPose(pose.at<float>(0, 0), pose.at<float>(0, 2), pose.at<float>(0, 1),
-  		-pose.at<float>(1, 0), -pose.at<float>(1, 2), -pose.at<float>(1, 1),
-  		pose.at<float>(2, 0), pose.at<float>(2, 2), pose.at<float>(2, 1));
+  	tf::Matrix3x3 rh_cameraPose(pose.at<float>(0, 0), pose.at<float>(0, 2), -pose.at<float>(0, 1),
+  		pose.at<float>(1, 0), pose.at<float>(1, 2), -pose.at<float>(1, 1),
+  		pose.at<float>(2, 0), pose.at<float>(2, 2), -pose.at<float>(2, 1));
 
-  	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3)*orb_scale, -pose.at<float>(1, 3)*orb_scale, pose.at<float>(2, 3)*orb_scale);
+  	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3)*orb_scale, pose.at<float>(1, 3)*orb_scale, pose.at<float>(2, 3)*orb_scale);
 
 
 /*	tf::Matrix3x3 rh_cameraPose_T = rh_cameraPose.inverse();
@@ -351,8 +351,8 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
   	tf::TransformListener listener_link;
   	tf::StampedTransform transform_link;
   	try {
-    	  listener_link.waitForTransform("/CameraTop_optical_frame", "/base_link", ros::Time(0), ros::Duration(10.0));
-    		listener_link.lookupTransform("/CameraTop_optical_frame", "/base_link", ros::Time(0), transform_link);
+    	  listener_link.waitForTransform("/CameraTop_optical_frame", "/base_footprint", ros::Time(0), ros::Duration(10.0));
+    		listener_link.lookupTransform("/CameraTop_optical_frame", "/base_footprint", ros::Time(0), transform_link);
     		transform_link.frame_id_ = "orb_pose";
     		transform_link.child_frame_id_ = "orb_base_link";
     		br.sendTransform(transform_link);
