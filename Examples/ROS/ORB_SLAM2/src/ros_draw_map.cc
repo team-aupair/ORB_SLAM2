@@ -2,6 +2,7 @@
 #include<algorithm>
 #include<fstream>
 #include<chrono>
+#include <stdlib.h>
 
 #include<ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
@@ -40,7 +41,7 @@ float u = 0.0;
 float b = 0.0;
 bool first_flag = true;
 
-int threshold = 2;
+int threshold = 5;
 float size = 0.01;
 
 ORB_SLAM2::Map* mpMap;
@@ -53,6 +54,10 @@ int update_counter_2d = map_update_rate_2d;
 
 typedef boost::shared_ptr< ::pepper_obj_msgs::objs_array const> ObjConstPtr;
 
+ros::Publisher marker_pub;
+ros::Publisher map_pub;
+ros::Publisher map_pub_;
+
 using namespace std;
 
 class ImageGrabber
@@ -60,8 +65,7 @@ class ImageGrabber
 public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
-    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD,const ObjConstPtr& msgC,
-			 ros::NodeHandle& nh, ros::Publisher& marker_pub, ros::Publisher& map_pub);
+    void GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD,const ObjConstPtr& msgC,ros::NodeHandle& nh);
 
     ORB_SLAM2::System* mpSLAM;
 };
@@ -132,10 +136,10 @@ void publish_points(visualization_msgs::Marker& points, float x, float y, float 
 
 void make_map(std::vector<std::vector<int>>& map_matrix, float x, float y, float z)
 {
-  tf::Vector3 pose(x*orb_scale, z*orb_scale, y*orb_scale);
+  tf::Vector3 pose(x*orb_scale, z*orb_scale, -y*orb_scale);
   tf::Vector3 transformed_pose = map_transform * pose;
 
-  if (transformed_pose.getZ() > 1.5) return;
+  if (transformed_pose.getZ() > 1.5 || transformed_pose.getZ() < 0.2) return;
 
   geometry_msgs::Point p;
   int map_x = (int) ((transformed_pose.getX() - l) / size);
@@ -243,13 +247,14 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "MAP");
     ros::start();
     ros::NodeHandle nh;
-    ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker> ("map_marker", 10);
-    ros::Publisher map_pub = nh.advertise<nav_msgs::OccupancyGrid> ("/map", 10);
+    marker_pub = nh.advertise<visualization_msgs::Marker> ("map_marker", 10);
+    map_pub = nh.advertise<nav_msgs::OccupancyGrid> ("/map", 10);
+    map_pub_ = nh.advertise<nav_msgs::OccupancyGrid> ("/map_orb", 10);
     ros::Rate rate(1000);
 
-    if(argc != 3)
+    if(argc!= 3 && argc != 4)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings" << endl;
+        cerr << endl << "Usage: rosrun ORB_SLAM2 RGBD path_to_vocabulary path_to_settings [threshold]" << endl;
         ros::shutdown();
         return 1;
     }
@@ -309,6 +314,8 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true, true);
     mpMap = SLAM.getMap();
+    if (argc == 4)
+      threshold = (int)strtol(argv[3], NULL, 10);
 
     ImageGrabber igb(&SLAM);
 
@@ -317,7 +324,7 @@ int main(int argc, char **argv)
     message_filters::Subscriber<pepper_obj_msgs::objs_array> caption_sub(nh, "/objects", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, pepper_obj_msgs::objs_array> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub,caption_sub);
-    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2,_3,nh,marker_pub,map_pub));
+    sync.registerCallback(boost::bind(&ImageGrabber::GrabRGBD,&igb,_1,_2,_3,nh));
 
     signal(SIGINT, keyboard_inturrupt);
 
@@ -341,7 +348,7 @@ int main(int argc, char **argv)
 }
 
 void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD,
-	 const ObjConstPtr& msgC, ros::NodeHandle& nh, ros::Publisher& marker_pub, ros::Publisher& map_pub)
+	 const ObjConstPtr& msgC, ros::NodeHandle& nh)
 {
     // Copy the ros image message to cv::Mat.
     cv_bridge::CvImageConstPtr cv_ptrRGB;
@@ -379,11 +386,11 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     nh.getParam("orb_translation", orb_trans);
     nh.getParam("orb_quaternion", orb_quat);
 
-    tf::Matrix3x3 rh_cameraPose(pose.at<float>(0, 0), pose.at<float>(0, 2), pose.at<float>(0, 1),
-      -pose.at<float>(1, 0), -pose.at<float>(1, 2), -pose.at<float>(1, 1),
-      pose.at<float>(2, 0), pose.at<float>(2, 2), pose.at<float>(2, 1));
+    tf::Matrix3x3 rh_cameraPose(pose.at<float>(0, 0), pose.at<float>(0, 2), -pose.at<float>(0, 1),
+  		pose.at<float>(1, 0), pose.at<float>(1, 2), -pose.at<float>(1, 1),
+  		pose.at<float>(2, 0), pose.at<float>(2, 2), -pose.at<float>(2, 1));
 
-    tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3)*orb_scale, -pose.at<float>(1, 3)*orb_scale, pose.at<float>(2, 3)*orb_scale);
+  	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3)*orb_scale, pose.at<float>(1, 3)*orb_scale, pose.at<float>(2, 3)*orb_scale);
 
     static tf::TransformBroadcaster br;
     tf::Vector3 map_translation(orb_trans[0], orb_trans[1], orb_trans[2]);
@@ -394,8 +401,8 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     tf::TransformListener listener_link;
     tf::StampedTransform transform_link;
     try {
-        listener_link.waitForTransform("/CameraTop_optical_frame", "/base_link", ros::Time(0), ros::Duration(10.0));
-        listener_link.lookupTransform("/CameraTop_optical_frame", "/base_link", ros::Time(0), transform_link);
+        listener_link.waitForTransform("/CameraTop_optical_frame", "/base_footprint", ros::Time(0), ros::Duration(10.0));
+        listener_link.lookupTransform("/CameraTop_optical_frame", "/base_footprint", ros::Time(0), transform_link);
         transform_link.frame_id_ = "orb_pose";
         transform_link.child_frame_id_ = "orb_base_link";
         br.sendTransform(transform_link);
@@ -448,6 +455,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 
 				grid_map.header.stamp = ros::Time::now();
         map_pub.publish(grid_map);
+        map_pub_.publish(grid_map);
 				update_counter_2d = 1;
 				//std::cout << grid_map.info.origin.position << std::endl;
     }
