@@ -448,7 +448,9 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 		        if(vpMPs[i]->isBad())
 		            continue;
 		        cv::Mat pos = vpMPs[i]->GetWorldPos();
-		        make_map(map_matrix, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+            cv::Mat dcptr = vpMPs[i]->GetDescriptor();
+            if(dcptr.at<unsigned char>(32) != 1)
+		            make_map(map_matrix, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
 		    }
 
 		    publish_map(grid_map, map_matrix, rows, cols);
