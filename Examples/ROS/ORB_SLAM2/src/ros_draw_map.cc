@@ -236,7 +236,7 @@ cv::Mat getObjImg(cv::Mat& img, vector<pepper_obj_msgs::objs>& obj_list)
     else if (obj.class_string == "tvmonitor" || obj.class_string == "keyboard" || obj.class_string == "clock") color = 4;
     else if (obj.class_string == "sofa" || obj.class_string == "refrigerator") color = 5;
 
-    cv::Rect rc(obj.y,obj.x,obj.w,obj.h);
+    cv::Rect rc(max(0,obj.y-obj.w),max(0,obj.x-obj.h),obj.w*2,obj.h*2);
     cv::rectangle(img, rc, color, CV_FILLED);  // filled rectangle
   }
 }
