@@ -1096,6 +1096,11 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         Mat workingMat = mvImagePyramid[level].clone();
         Mat workingObjMat = objPyramid[level].clone();
         GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
+        /* for debugging
+        Mat merged;
+        addWeighted( workingMat, 0.5, workingObjMat, 0.5, 0.0, merged);
+        imwrite("merged_"+to_string(level)+".png",merged);
+        */
 
         // Compute the descriptors
         Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);

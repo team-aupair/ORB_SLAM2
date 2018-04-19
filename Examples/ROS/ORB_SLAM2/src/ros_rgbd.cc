@@ -167,13 +167,13 @@ cv::Mat getObjImg(cv::Mat& img, vector<pepper_obj_msgs::objs>& obj_list)
         pepper_obj_msgs::objs obj = obj_list[i];
         int color = 0;
 
-        if (obj.class_string == "person") color = 1;
+        if (obj.class_string == "person") color = 250;
         else if (obj.class_string == "bottle" || obj.class_string == "coke" || obj.class_string == "green tea" || obj.class_string == "aquarius" || obj.class_string == "coldbrew") color = 2;
         else if (obj.class_string == "chair" || obj.class_string == "table" || obj.class_string == "diningtable") color = 3;
         else if (obj.class_string == "tvmonitor" || obj.class_string == "keyboard" || obj.class_string == "clock") color = 4;
         else if (obj.class_string == "sofa" || obj.class_string == "refrigerator") color = 5;
 
-        cv::Rect rc(obj.y,obj.x,obj.w,obj.h);
+        cv::Rect rc(max(0,obj.y-obj.w),max(0,obj.x-obj.h),obj.w*2,obj.h*2);
         cv::rectangle(img, rc, color, CV_FILLED);	// filled rectangle
     }
 }
@@ -284,6 +284,11 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     vector<pepper_obj_msgs::objs> obj_list =  msgC->objects;
     cv::Mat objmap = cv::Mat::zeros(cv_ptrRGB->image.rows, cv_ptrRGB->image.cols, CV_8UC1);
     getObjImg(objmap, obj_list);
+    //cv::Mat merged;
+    //cv::addWeighted( cv_ptrRGB->image, 0.5, objmap, 0.5, 0.0, merged);
+    cv::imwrite("rgb.png",cv_ptrRGB->image);
+    cv::imwrite("d.png",cv_ptrD->image);
+    cv::imwrite("yolo.png",objmap);
     cv::Mat pose = mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image, objmap, cv_ptrRGB->header.stamp.toSec());
 
     if (pose.empty())
