@@ -77,7 +77,7 @@ Viewer.ViewpointF: 500
 # Map Parapeters
 #--------------------------------------------------------------------------------------------
 Map.mapfile: /home/cylee/ORB_SLAM2/map.bin
-Map.scale: 5.0
+Map.scale: 5.33
 
 ## before 2018.03.23 ##
 # Map.translation: [-3.8905066, 0.09379484, 1.15328161]
@@ -101,5 +101,17 @@ Map.scale: 5.0
 #Map.quaternion: [-0.0950, 0.2000, -0.8538, 0.5082]
 
 ## 2018.05.09
-Map.translation: [-5.65285, -0.845415, -1.05]
-Map.quaternion: [-0.19, -0.12, 0.06, 0.9721]
+#Map.translation: [-5.65285, -0.845415, -1.05]
+#Map.quaternion: [-0.19, -0.12, 0.06, 0.9721]
+
+## 4f_final
+#Map.translation: [0.0, 0.0, 3.5]
+#Map.quaternion: [-0.3084896, 0.2258585, -0.5839268, 0.7181366]
+
+## 4f2
+Map.translation: [-1.742, 4.4577, 0.5132206]
+Map.quaternion: [0.01134596, 0.07372957, 0.99548553, 0.05868376]
+
+## 5f_1
+#Map.translation: [-4.45, 1.4, 2.15]
+#Map.quaternion: [-0.1, -0.06, -0.041, 0.9776271]

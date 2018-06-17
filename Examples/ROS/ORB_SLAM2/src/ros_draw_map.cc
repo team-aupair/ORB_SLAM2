@@ -147,10 +147,10 @@ void make_map(std::vector<std::vector<int>>& map_matrix, float x, float y, float
 //  std::cout << map_x << ", " << map_y << std::endl;
 
   for(int i=-2; i<3; i++){
-    if (map_y+i < 0 || map_y+i >= (int)((u-b) / size )+1 )
+    if (map_y+i < 0 || map_y+i >= (int)((u-b) / size )-3 )
       continue;
     for(int j=-2; j<3; j++){
-      if (map_x+j < 0 || map_x+j >= (int)((r-l) / size )+1 )
+      if (map_x+j < 0 || map_x+j >= (int)((r-l) / size )-3 )
         continue;
       map_matrix[map_y+i][map_x+j] += 1;
     }
@@ -426,7 +426,7 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
     /////////////////////////////////
 
     if(update_counter_2d++ == map_update_rate_2d) {
-				nav_msgs::OccupancyGrid grid_map;
+		nav_msgs::OccupancyGrid grid_map;
         const vector<ORB_SLAM2::MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
         const vector<ORB_SLAM2::MapPoint*> &vpRefMPs = mpMap->GetReferenceMapPoints();
         set<ORB_SLAM2::MapPoint*> spRefMPs(vpRefMPs.begin(), vpRefMPs.end());
@@ -434,31 +434,37 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
         if(vpMPs.empty())
             return;
 
-				/*u-=23;
-				b+=25;
-				r-=10;
-				l+=6;*/
-				int cols = (int)((r-l) / size)+1;
-		    int rows = (int)((u-b) / size)+1;
-		    std::cout << "map rows: " << rows << " | cols: " << cols << std::endl;
-		    std::vector<std::vector<int>> map_matrix(rows, std::vector<int>(cols));
+        float size_limit = 20.0;
 
-				for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
-		    {
-		        if(vpMPs[i]->isBad())
-		            continue;
-		        cv::Mat pos = vpMPs[i]->GetWorldPos();
+	    if(u>size_limit)
+		    u = size_limit;
+		if(b<-size_limit)
+		    b = -size_limit;
+		if(r>size_limit)
+		    r = size_limit;
+		if(l<-size_limit)
+		    l = -size_limit;
+
+		int cols = (int)((r-l) / size)+1;
+		int rows = (int)((u-b) / size)+1;
+		std::cout << "map rows: " << rows << " | cols: " << cols << std::endl;
+		std::vector<std::vector<int>> map_matrix(rows, std::vector<int>(cols));
+
+		for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
+		{
+		    if(vpMPs[i]->isBad())
+		        continue;
+		    cv::Mat pos = vpMPs[i]->GetWorldPos();
             cv::Mat dcptr = vpMPs[i]->GetDescriptor();
             if(dcptr.at<unsigned char>(32) != 1)
-		            make_map(map_matrix, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
-		    }
+		    make_map(map_matrix, pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+		}
 
-		    publish_map(grid_map, map_matrix, rows, cols);
-
-				grid_map.header.stamp = ros::Time::now();
+        publish_map(grid_map, map_matrix, rows, cols);
+		grid_map.header.stamp = ros::Time::now();
         map_pub.publish(grid_map);
         map_pub_.publish(grid_map);
-				update_counter_2d = 1;
-				//std::cout << grid_map.info.origin.position << std::endl;
+		update_counter_2d = 1;
+	    //std::cout << grid_map.info.origin.position << std::endl;
     }
 }
