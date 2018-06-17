@@ -363,6 +363,7 @@ int main(int argc, char **argv)
 
     get_map_points(points);
     generate_map();
+    marker_pub.publish(points);
 
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh, "/pepper_robot/camera/front/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh, "/pepper_robot/camera/depth/image_raw", 1);
