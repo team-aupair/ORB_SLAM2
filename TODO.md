@@ -7,7 +7,7 @@
 
 ## 알고리즘 설명
 ### 전체 구조
-![](.SemanticVS_images\e59352cc.png) <br/>
+![](.SemanticVS_images/e59352cc.png) <br/>
 전체 그래프 구조입니다. <br/>
 크게 TRACKING, LOCAL MAPPING, LOOP CLOSING 단계로 나뉘어지고, thread로 나뉘어진 걸로 알고있습니다. <br/>
 ORB SLAM system에 대해서 완전히 파악하지 못하셨을것이니(냅두면 저도 까먹음) 우선 ORB-SLAM2의 시스템부터 설명해보겠습니다. <br/>
@@ -18,8 +18,8 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
 -----------------------
 
 ### TRACKING 단계
-![](.SemanticVS_images\16675ec9.png) <br/>
-![](.SemanticVS_images\05d42ed9.png) <br/>
+![](.SemanticVS_images/16675ec9.png) <br/>
+![](.SemanticVS_images/05d42ed9.png) <br/>
 
 1. RGB Image와 Depth Image를 받아서 ORB를 추출하고 <br/>
    Generate Stereo Coordinate 단계에서 어떻게어떻게 자체적으로 카메라 calibration을 하는거 같습니다.
@@ -31,7 +31,7 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
 2. 지도(3차원 ORB 분포)와 영상(2차원 ORB 분포)를 매칭시켜서 가장 잘 맞는 부분을 카메라 위치로 선정합니다.
     * 즉 localization 작업을 합니다.
     * 영상과 지도를 매칭시키는 작업을 PnP(Perspective-n-Point) 라고 하는데, 3차원<->2차원 좌표간 변환을 하는 수식을 해석해보자면 <br/>
-    ![](.SemanticVS_images\cec53df7.png) <br/>
+    ![](.SemanticVS_images/cec53df7.png) <br/>
     scale * 이미지의 2차원 좌표 = intrinsic camera parameters(카메라 성질) * (R | T) * 지도의 3차원 좌표 <br/> 
     정도가 되겠습니다. <br/>
     여기서 (R | T) matrix(extrinsic camera parameters)가 카메라의 위치 정보를 가지고 있습니다(T: (x, y, z), R: 변환하면 yaw pitch roll) <br/>
@@ -41,7 +41,7 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
     
 3. Bundle Adjustment
     * 뒤에서도 계속 쓰이는 알고리즘이라 항목을 구분하겠습니다. <br/>
-    ![](.SemanticVS_images\6c723eee.png)
+    ![](.SemanticVS_images/6c723eee.png)
     * 굉장히 간단하게 설명하자면, 카메라 포인트 C1 C2 C3가 있다고 치고, C1과 C2간의 변환행렬(R|T) T1, C2-C3: T2, C1-C3: T3를 알고 있다고 합시다.
         * 카메라 포인트는 현재 프레임과 keyframe으로 추정되고, 각 변환행렬은 keyframe 삽입단계에서 공유된 Mappoint로 계산됩니다.
         * 이해할필요없음 
@@ -49,7 +49,7 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
     * 그렇게 해서 구해진 C3값들 간에는 차이가 생기기 때문에, 이걸 최소화하는 방향으로 카메라 프레임 위치를 조정합니다.
     * 즉 Bundle로 묶인 부분들을 Adjust하기 때문에 Bundle Adjustment(BA)입니다.
         * 다만 TRACKING 단계에서의 BA는 현재 카메라 프레임만 조절하는 것으로 알고있습니다.
-    * ![](.SemanticVS_images\e4c21d4a.png) ![](.SemanticVS_images\1bb65476.png) 말은 쉽지
+    * ![](.SemanticVS_images/e4c21d4a.png) ![](.SemanticVS_images/1bb65476.png) 말은 쉽지
     
 4. New Keyframe Decision
     * 우선 Keyframe이라는 개념부터 설명합시다.
@@ -62,7 +62,7 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
 -----------------------
     
 ### LOCAL MAPPING 단계
-![](.SemanticVS_images\73b70f6b.png) . ![](.SemanticVS_images\7288234b.png) <br/>
+![](.SemanticVS_images/73b70f6b.png) . ![](.SemanticVS_images/7288234b.png) <br/>
 
 1. MAP 구성요소
     * MAP은 보시다시피 4개 정도의 구성요소로 이루어져있는데
@@ -75,7 +75,7 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
         
 2. KeyFrame Insertion ~ New Points Creation    
     * 앞에서 구한 frame의 좌표를 토대로, map에다가 frame과 거기 걸려있는 ORB feature(MapPoints)를 우겨넣습니다. <br/>
-    ![](.SemanticVS_images\16911fb5.png) <br/>
+    ![](.SemanticVS_images/16911fb5.png) <br/>
     Ki: 집어넣을 frame, K1: 인접한 frame, 점선 원: new MapPoints
     * 뭐 그냥 쑥 집어넣었으면 좋겠지만, 여러 절차가 존재합니다. 요약하면
     * 일단 keyframe을 넣고, covisibility graph 업데이트하고,
@@ -94,15 +94,15 @@ https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7946260&tag=1 을 참조하
 -----------------------
     
 ### LOOP CLOSING 단계
-![](.SemanticVS_images\de2fdddd.png)
-![](.SemanticVS_images\689b81f8.png)
+![](.SemanticVS_images/de2fdddd.png)
+![](.SemanticVS_images/689b81f8.png)
 
 1. Loop closing 단계에선, 이전에 갔던 keyframe A와 현재 keyframe B가 비슷한 위치에 있다고 판단되면, 
    A와 B를 연결시키면서 Loop을 생성하고, 그 안에 엮인 keyframe들의 위치를 재조정하는 단계입니다.
     * 각 단계는 모두 rule based한 방법으로 판단하는거 같습니다. 후술.
    
 2. Loop Detection 단계는 아래와 같습니다. <br/> 
-![](.SemanticVS_images\8a275eb2.png)
+![](.SemanticVS_images/8a275eb2.png)
     * 정리하자면, Covisibility Graph에 연결되있지 않으면서 일정 거리 이상으로 떨어진 모든 frame들을 후보로 두고,
     * 모든 후보에 대해서, 일단 끼워 맞춰 봅니다.
         - ORB correspondence matching으로 가장 그럴듯한 공통 지점을 구하고
@@ -110,7 +110,7 @@ https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7946260&tag=1 을 참조하
         - 충분히 그럴듯 해 보이면 맞는 Loop으로 간주합니다.
 
 3. Loop Correction 단계는 아래와 같습니다. <br/>
-![](.SemanticVS_images\d73dcd01.png)
+![](.SemanticVS_images/d73dcd01.png)
     * 일단 새로 연결되는 두 frame간 공통 Map Point를 구하고 graph에 edge를 삽입한 뒤
     * Covisibility Graph에 연결된 keyframe들에 대해서 pose와 map-point를 다시 구하고
     * Loop에는 안들어가지만 거기에 연결된 keyframe들에 대해서도 위치를 보정합니다.
@@ -130,7 +130,7 @@ __아래의 내용들은 모두 discussion 을 거치고 확정을 해야 할 �
 * 우리의 목표는 `augmentation of current visual slam (orbslam2) with object recognition`.
 * augmentation이라는 말의 범위가 넓긴 하지만, 현재로선 YOLO의 labeling 결과를 map-point에 저장해서 써먹겠다는 뜻으로 알고있습니다.
 * 불변점을 감지하는 FAST 알고리즘 자체는 건들일 부분이 딱히 없으며, descriptor인 ORB(char[32])에 추가로 라벨링 결과를 append하여 각 특징점들에 라벨을 붙입니다. <br/><br/>
-![](.SemanticVS_images\e85641ab.png)
+![](.SemanticVS_images/e85641ab.png)
 * 또한, 기존 ORB-SLAM에서 yolo와 비슷하게 물체를 감지(?)하는 부분이 있는데 (Visual Vocabulary), 이 부분을 YOLO로 대체해 보는 것을 목표로 합니다.
     * 기존 Visual Vocabulary는 물체를 잔뜩 찍어 놓고, ORB를 감지해본 뒤, 물체마다 가지는 고유한 feature 분포를 싸그리 저장해놓고(Bag of Words, BoW)
     * 새로운 frame이 들어오면 여기에다가 matching시켜버리는 유사 object detection입니다.
@@ -189,10 +189,10 @@ https://github.com/team-aupair/ORB_SLAM2
 ## 코드 분석
 
 기본적으로 살펴봐야 하는 부분은 <br/>
-![](.SemanticVS_images\da83e4b0.png) <br/>
+![](.SemanticVS_images/da83e4b0.png) <br/>
 src 폴더 내부지만 (필요하다면 include 내부의 헤더파일도)
 
-![](.SemanticVS_images\81c1f46e.png) <br/>
+![](.SemanticVS_images/81c1f46e.png) <br/>
 Thirdparty 내부의 DBoW2 쪽 코드도 봐야하는것으로 밝혀져... 충격...
 
 > ### Converter.cc
