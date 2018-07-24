@@ -1,3 +1,5 @@
+ $ w \times w $ 
+ 
 # ORB-SLAM implementation TODOs
 아 막막허다 <br/><br/>
 아직 코드 파악이 완벽하게 안되었기 때문에(영원히 못할듯),<br/>
