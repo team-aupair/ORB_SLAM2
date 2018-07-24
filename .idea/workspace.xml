@@ -36,8 +36,8 @@
         <entry file="file://$PROJECT_DIR$/TODO.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor relative-caret-position="1083">
-                <caret line="129" lean-forward="true" selection-start-line="129" selection-end-line="129" />
+              <first_editor relative-caret-position="760">
+                <caret line="211" column="73" selection-start-line="211" selection-start-column="73" selection-end-line="211" selection-end-column="73" />
               </first_editor>
               <second_editor />
             </state>
@@ -151,8 +151,8 @@
     <entry file="file://$PROJECT_DIR$/TODO.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="1083">
-            <caret line="129" lean-forward="true" selection-start-line="129" selection-end-line="129" />
+          <first_editor relative-caret-position="760">
+            <caret line="211" column="73" selection-start-line="211" selection-start-column="73" selection-end-line="211" selection-end-column="73" />
           </first_editor>
           <second_editor />
         </state>

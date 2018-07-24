@@ -133,9 +133,13 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
 ### LOCAL MAPPING 단계
 ![](.SemanticVS_images/73b70f6b.png) . ![](.SemanticVS_images/7288234b.png) <br/>
 
+* 삼각측량법으로 지도 생성
+  * 특징점 매칭을 통해 인접한 두 프레임 특징점이 매칭됐을 때, 매칭된 특징점에서 3차원 공간상 좌표를 계산
+  * 이때 각 프레임에 있는 3차원 공간상 위치는 알고 있다고 가정
+
 1. MAP 구성요소
     * MAP은 보시다시피 4개 정도의 구성요소로 이루어져있는데
-    1. KeyFrames: 설명했읍니다
+    1. KeyFrames: 설명했습니다
     2. MapPoints: KeyFrame에 걸려있는 ORB feature들을 뜻합니다. 당연히 여러 frame에 걸려 있을 수 있으며, 
        그렇게 여러군데에 걸려있는 MapPoint를 이용해서, 각 KeyFrame간의 연결관계인
     3. Covisibility Graph를 생성합니다. MapPoint 15개 이상이 KeyFrame A, B에 걸려있으면 Covisivility Graph에서 A-B가 연결이 됩니다.
@@ -204,6 +208,8 @@ __아래의 내용들은 모두 discussion 을 거치고 확정을 해야 할 �
     * 기존 Visual Vocabulary는 물체를 잔뜩 찍어 놓고, ORB를 감지해본 뒤, 물체마다 가지는 고유한 feature 분포를 싸그리 저장해놓고(Bag of Words, BoW)
     * 새로운 frame이 들어오면 여기에다가 matching시켜버리는 유사 object detection입니다.
     * PLACE RECOGNITION 부분에 들어간 것으로 보아 tracking lost 상황에서 쓰이는 것으로 추정중.
+    * 제가 알고 있기로는(충연), ORB-SLAM에서 loop detection을 위해 BoW를 사용하는 것 같습니다
+      * 새로운 키프레임이 생성될 때 Visual Word (BoW)를 계산하고 기존 것들과 비교해 loop detection 
     
 
 ### 진행이 된 부분
