@@ -33,24 +33,29 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
     * BRIEF는 특징점 주변의 점 몇개의 밝기를 구해서 그대로 저장하는데, 이게 회전변환에 취약해서 이를 보완한게 ORB.
       * Binary Test: 특징점 KP 주위의 _w_×_w_ 크기의 이미지 패치 _I<sub>w</sub>_ 내부에서 임의의 두 픽셀 _p<sub>a</sub>_, _p<sub>b</sub>_ 를 골라 Intensity를 비교
       
-        <img src="https://latex.codecogs.com/svg.latex?\Large&space;\tau \left( KP; { p }_{ a }, { p }_{ b } \right) := \left\{ \begin{matrix} 1: { I }_{ w }\left( { p }_{ a } \right)  < { I }_{ w }\left( { p }_{ b } \right)  \\ 0: { I }_{ w }\left( { p }_{ a } \right)  \ge  { I }_{ w }\left( { p }_{ b } \right)  \end{matrix} \right" title=""/>
+        ![](https://latex.codecogs.com/svg.latex?\Large&space;\tau\left(KP;{p}_{a},{p}_{b}\right):=\left\{\begin{matrix}1:{I}_{w}\left({p}_{a}\right)%3C{I}_{w}\left({p}_{b}\right)\\\\0:{I}_{w}\left({p}_{a}\right)\ge{I}_{w}\left({p}_{b}\right)\end{matrix}\right)
+        <!--//img src="https://latex.codecogs.com/svg.latex?\Large&space;\tau \left( KP; { p }_{ a }, { p }_{ b } \right) := \left\{ \begin{matrix} 1: { I }_{ w }\left( { p }_{ a } \right)  < { I }_{ w }\left( { p }_{ b } \right)  \\ 0: { I }_{ w }\left( { p }_{ a } \right)  \ge  { I }_{ w }\left( { p }_{ b } \right)  \end{matrix} \right"//-->
       
       * 두 픽셀을 뽑는 방법 중 KP 주위에서 Gaussian Random Sampling을 이용한 방법이 가장 성능이 좋다고 함. BRIEF 기술자는 n번의 Binary Test 결과를 이진수 벡터로 표현  
       
-        <img src="https://latex.codecogs.com/svg.latex?\Large&space;f_{ n }\left( KP \right) := \sum _{1 \le i \le 0}{ 2^{i-1} \tau \left( KP; p_{a_{i}}, p_{b_{i}} \right)}" title=""/>
+        ![](https://latex.codecogs.com/svg.latex?\Large&space;f_{n}\left(KP\right):=\sum_{1\le\\i\le0}{2^{i-1}\tau\left(KP;p_{a_{i}},p_{b_{i}}\right)})
+        <!--//img src="https://latex.codecogs.com/svg.latex?\Large&space;f_{ n }\left( KP \right) := \sum _{1 \le i \le 0}{ 2^{i-1} \tau \left( KP; p_{a_{i}}, p_{b_{i}} \right)}" title=""//-->
       
       * BRIEF는 이미지 회전에 취약한 단점을 가지고 있기 때문에, Binary Test에 사용되는 픽셀 집합들을 특징점 각도만큼 회전시켜서 모두 같은 곳을 바라보도록 함으로써 BRIEF가 가진 회전 취약성을 보완
       
-        <img src="https://latex.codecogs.com/svg.latex?S = \left( \frac { p_{a_{i}}, ... , p_{a_{n}} }{ p_{b_{i}}, ... , p_{b_{n}} }  \right)"/>
+        ![](https://latex.codecogs.com/svg.latex?S=\left(\frac{p_{a_{i}},...,p_{a_{n}}}{p_{b_{i}},...,p_{b_{n}}}\right))
+        <!--//img src="https://latex.codecogs.com/svg.latex?S = \left( \frac { p_{a_{i}}, ... , p_{a_{n}} }{ p_{b_{i}}, ... , p_{b_{n}} }  \right)"//-->
         
         * S는 Binary Test를 위해 선정된 픽셀 집합
         * 특징점 방향을 나타내는 각도가 _θ_ 일때 그에 대응되는 회전변환행렬 _R<sub>θ</sub>_ 를 이용해 회전되는 픽셀 집합 _S<sub>θ</sub>_ 를 다음과 같이 표현
-
-          <img src="https://latex.codecogs.com/svg.latex?{ S }_{ \theta } = R_{\theta}S"/>
+        
+          ![](https://latex.codecogs.com/svg.latex?{S}_{\theta}=R_{\theta}S)
+          <!--//img src="https://latex.codecogs.com/svg.latex?{ S }_{ \theta } = R_{\theta}S"//-->
            
       * Steered BRIEF로 재탄생
         
-        <img src="https://latex.codecogs.com/svg.latex?g_{ n }\left( KP,\theta  \right) :=f_{ n }\left( KP \right) |\left( p_{ a_{ i } },p_{ b_{ i } } \right) \in { S }_{ \theta }"/>
+        ![](https://latex.codecogs.com/svg.latex?g_{n}\left(KP,\theta\right):=f_{n}\left(KP\right)|\left(p_{a_{i}},p_{b_{i}}\right)\in{S}_{\theta})
+        <!--//img src="https://latex.codecogs.com/svg.latex?g_{ n }\left( KP,\theta  \right) :=f_{ n }\left( KP \right) |\left( p_{ a_{ i } },p_{ b_{ i } } \right) \in { S }_{ \theta }"//-->
         
         * 단점: 기존 BRIEF와 비교했을 때 입력에 대한 분산 값이 상대적으로 작고, Binary Test간 상관관계가 높아 기술자로서 서로 다른 특징점을 구분하는 성능이 떨어짐
         * ORB에서는 이 단점을 개선해 빠르게 계산이 가능하면서도 안정적이고 높은 성능을 보이는 rBRIEF (아마 rotated-BRIEF)기술자를 도입해 사용
