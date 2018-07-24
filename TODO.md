@@ -23,10 +23,41 @@ https://cseweb.ucsd.edu/classes/sp17/cse252C-a/CSE252C_20170503.pdf <br/>
 
 1. RGB Image와 Depth Image를 받아서 ORB를 추출하고 <br/>
    Generate Stereo Coordinate 단계에서 어떻게어떻게 자체적으로 카메라 calibration을 하는거 같습니다.
-    * ORB같은 경우엔 keypoint(특징점, 불변점) detection은 FAST를, descriptor(각 불변점들의 특징)는 BRIEF의 변형인 ORB(oriented BREIF)를 사용합니다.
+    * ORB같은 경우엔 keypoint(특징점, 불변점) detection은 FAST를, descriptor(각 불변점들의 특징)는 BRIEF의 변형인 ORB(oriented FAST and Rotated BREIF)를 사용합니다.
     * FAST는 각 픽셀마다 주변 픽셀의 밝기를 구해서, 몇 개 이상이 차이가 난다면 특징점으로 둡니다.
-    * BRIEF는 특징점 주변의 점 몇개의 밝기를 구해서 그대로 저장하는데, 이게 회전변환에 취약해서 이를 보완한게 ORB. 
+      * 영상 내의 임의의 점 p을 중심으로 radius=3px인 원을 그렸을 때, 원이 지나가는 16개의 픽셀과 p의 Intensity 차이가 주어진 threshold보다 높은 픽셀이 n개 이상 '연속'되면 p를 특징점으로 검출
+      * n값에 따라 FAST-n이라고 표현하는데, ORB에서는 FAST-9을 사용하는 것으로 알고 있음
+      * Edge가 검출되는 경우가 많은데 Edge는 특징점으로 적합하지 않기 떄문에, [Harris Corner Detector](https://en.wikipedia.org/wiki/Harris_Corner_Detector)를 이용하여 코너만 채택
+      * Scale-dependent하기 때문에 특징점 결과가 다르게 나오는 문제를 해결하기 위해 Computer Vision 분야에서 주로 사용되는 [Scale Pyramid 방법](http://darkpgmr.tistory.com/137)을 사용하여 해결
+      * FAST는 Corner 여부는 파악하지만 이들의 방향성을 판단할 수 없기 때문에 이를 검출하기 위해 [Intensity Centroid를 사용](https://en.wikipedia.org/wiki/Image_moment)  
+    * BRIEF는 특징점 주변의 점 몇개의 밝기를 구해서 그대로 저장하는데, 이게 회전변환에 취약해서 이를 보완한게 ORB.
+      * Binary Test: 특징점 KP 주위의 _w_×_w_ 크기의 이미지 패치 _I<sub>w</sub>_ 내부에서 임의의 두 픽셀 _p<sub>a</sub>_, _p<sub>b</sub>_ 를 골라 Intensity를 비교
+      
+        <img src="https://latex.codecogs.com/svg.latex?\Large&space;\tau \left( KP; { p }_{ a }, { p }_{ b } \right) := \left\{ \begin{matrix} 1: { I }_{ w }\left( { p }_{ a } \right)  < { I }_{ w }\left( { p }_{ b } \right)  \\ 0: { I }_{ w }\left( { p }_{ a } \right)  \ge  { I }_{ w }\left( { p }_{ b } \right)  \end{matrix} \right" title=""/>
+      
+      * 두 픽셀을 뽑는 방법 중 KP 주위에서 Gaussian Random Sampling을 이용한 방법이 가장 성능이 좋다고 함. BRIEF 기술자는 n번의 Binary Test 결과를 이진수 벡터로 표현  
+      
+        <img src="https://latex.codecogs.com/svg.latex?\Large&space;f_{ n }\left( KP \right) := \sum _{1 \le i \le 0}{ 2^{i-1} \tau \left( KP; p_{a_{i}}, p_{b_{i}} \right)}" title=""/>
+      
+      * BRIEF는 이미지 회전에 취약한 단점을 가지고 있기 때문에, Binary Test에 사용되는 픽셀 집합들을 특징점 각도만큼 회전시켜서 모두 같은 곳을 바라보도록 함으로써 BRIEF가 가진 회전 취약성을 보완
+      
+        <img src="https://latex.codecogs.com/svg.latex?S = \left( \frac { p_{a_{i}}, ... , p_{a_{n}} }{ p_{b_{i}}, ... , p_{b_{n}} }  \right)"/>
+        
+        * S는 Binary Test를 위해 선정된 픽셀 집합
+        * 특징점 방향을 나타내는 각도가 _θ_ 일때 그에 대응되는 회전변환행렬 _R<sub>θ</sub>_ 를 이용해 회전되는 픽셀 집합 _S<sub>θ</sub>_ 를 다음과 같이 표현
+
+          <img src="https://latex.codecogs.com/svg.latex?{ S }_{ \theta } = R_{\theta}S"/>
+           
+      * Steered BRIEF로 재탄생
+        
+        <img src="https://latex.codecogs.com/svg.latex?g_{ n }\left( KP,\theta  \right) :=f_{ n }\left( KP \right) |\left( p_{ a_{ i } },p_{ b_{ i } } \right) \in { S }_{ \theta }"/>
+        
+        * 단점: 기존 BRIEF와 비교했을 때 입력에 대한 분산 값이 상대적으로 작고, Binary Test간 상관관계가 높아 기술자로서 서로 다른 특징점을 구분하는 성능이 떨어짐
+        * ORB에서는 이 단점을 개선해 빠르게 계산이 가능하면서도 안정적이고 높은 성능을 보이는 rBRIEF (아마 rotated-BRIEF)기술자를 도입해 사용
+       
     * 자세한 원리를 알고싶으시다면 구글링
+      * 구글링 완료
+      * http://www.willowgarage.com/sites/default/files/orb_final.pdf
     
 2. 지도(3차원 ORB 분포)와 영상(2차원 ORB 분포)를 매칭시켜서 가장 잘 맞는 부분을 카메라 위치로 선정합니다.
     * 즉 localization 작업을 합니다.
