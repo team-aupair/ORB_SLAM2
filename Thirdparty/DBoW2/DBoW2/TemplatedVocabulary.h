@@ -1172,6 +1172,14 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
         v.addWeight(id, w);
         fv.addFeature(nid, i_feature);
       }
+
+      int yolo_index = (*fit).ptr<unsigned char>(1, 32);
+      if (yolo_index != 0 && yolo_index != 1)
+      {
+        NodeId yoloid = (NodeId)(-yolo_index);
+        v.addWeight(yoloid, 0.01);
+        fv.addFeature(yoloid, i_feature);
+      }
     }
 
     if(!v.empty() && !must)

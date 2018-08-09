@@ -94,22 +94,22 @@ void publish_points(visualization_msgs::Marker& points, float x, float y, float 
         c.g = 0.0;
         c.b = 0.0;
     }
-    else if(s == 2){
+    else if(s >= 2 && s <= 2){
         c.r = 0.0;
         c.g = 1.0;
         c.b = 0.0;
     }
-    else if(s == 3){
+    else if(s >= 3 && s <= 5){
         c.r = 0.0;
         c.g = 0.0;
         c.b = 1.0;
     }
-    else if(s == 4){
+    else if(s >= 6 && s <= 8){
         c.r = 1.0;
         c.g = 1.0;
         c.b = 0.0;
     }
-    else if(s == 5){
+    else if(s >= 9 && s <= 10){
         c.r = 1.0;
         c.g = 0.0;
         c.b = 1.0;
@@ -162,16 +162,27 @@ void get_map_points(visualization_msgs::Marker& points)
 
 cv::Mat getObjImg(cv::Mat& img, vector<pepper_obj_msgs::objs>& obj_list)
 {
+//    string[] rYoloClasses = {
+//        {"person"},
+//        {"bottle"},
+//        {"chair", "armchair"},
+//    };
+
     for(int i=0; i<obj_list.size(); i++)
     {
         pepper_obj_msgs::objs obj = obj_list[i];
         int color = 0;
 
         if (obj.class_string == "person") color = 1;
-        else if (obj.class_string == "bottle" || obj.class_string == "coke" || obj.class_string == "green tea" || obj.class_string == "aquarius" || obj.class_string == "coldbrew") color = 2;
-        else if (obj.class_string == "chair" || obj.class_string == "table" || obj.class_string == "diningtable") color = 3;
-        else if (obj.class_string == "tvmonitor" || obj.class_string == "keyboard" || obj.class_string == "clock") color = 4;
-        else if (obj.class_string == "sofa" || obj.class_string == "refrigerator") color = 5;
+        else if (obj.class_string == "bottle") color = 2;
+        else if (obj.class_string == "chair") color = 3;
+        else if (obj.class_string == "table") color = 4;
+        else if (obj.class_string == "diningtable") color = 5;
+        else if (obj.class_string == "tvmonitor") color = 6;
+        else if (obj.class_string == "keyboard") color = 7;
+        else if (obj.class_string == "clock") color = 8;
+        else if (obj.class_string == "sofa") color = 9;
+        else if (obj.class_string == "refrigerator") color = 10;
 
         cv::Rect rc(max(0,obj.y-obj.w),max(0,obj.x-obj.h),obj.w*2,obj.h*2);
         cv::rectangle(img, rc, color, CV_FILLED);	// filled rectangle
