@@ -33,6 +33,8 @@
 
 #include "../DUtils/Random.h"
 
+#include <iostream>
+
 using namespace std;
 
 namespace DBoW2 {
@@ -1173,10 +1175,12 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
         fv.addFeature(nid, i_feature);
       }
 
-      int yolo_index = (*fit).ptr<unsigned char>(1, 32);
+//      int yolo_index = (*fit).at<uint8_t>(1, 32);
+      cv::Mat desc = *fit;
+      int yolo_index = desc.at<unsigned char>(0, 32);
       if (yolo_index != 0 && yolo_index != 1)
       {
-        NodeId yoloid = (NodeId)(-yolo_index);
+        NodeId yoloid = yolo_index + m_words.size();
         v.addWeight(yoloid, 0.01);
         fv.addFeature(yoloid, i_feature);
       }

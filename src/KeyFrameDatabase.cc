@@ -34,7 +34,7 @@ namespace ORB_SLAM2
 KeyFrameDatabase::KeyFrameDatabase (ORBVocabulary *voc):
     mpVoc(voc)
 {
-    mvInvertedFile.resize(voc->size());
+    mvInvertedFile.resize(voc->size() + 100);
 }
 
 
@@ -70,7 +70,7 @@ void KeyFrameDatabase::erase(KeyFrame* pKF)
 void KeyFrameDatabase::clear()
 {
     mvInvertedFile.clear();
-    mvInvertedFile.resize(mpVoc->size());
+    mvInvertedFile.resize(mpVoc->size() + 100);
 }
 
 
@@ -133,7 +133,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
             float si = mpVoc->score(pKF->mBowVec,pKFi->mBowVec);
 
-            std::cout << "score = " << score << std::endl;
+            std::cout << "score = " << si << std::endl;
 
             pKFi->mLoopScore = si;
             if(si>=minScore)
