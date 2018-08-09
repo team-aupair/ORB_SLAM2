@@ -24,6 +24,7 @@
 #include "Thirdparty/DBoW2/DBoW2/BowVector.h"
 
 #include<mutex>
+#include<iostream>
 
 using namespace std;
 
@@ -131,6 +132,8 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
             nscores++;
 
             float si = mpVoc->score(pKF->mBowVec,pKFi->mBowVec);
+
+            std::cout << "score = " << score << std::endl;
 
             pKFi->mLoopScore = si;
             if(si>=minScore)

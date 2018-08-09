@@ -30,6 +30,7 @@
 
 #include<mutex>
 #include<thread>
+#include<iostream>
 
 
 namespace ORB_SLAM2
@@ -136,6 +137,8 @@ bool LoopClosing::DetectLoop()
         if(score<minScore)
             minScore = score;
     }
+
+    std::cout << "minScore = " << minScore << std::endl;
 
     // Query the database imposing the minimum score
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectLoopCandidates(mpCurrentKF, minScore);
