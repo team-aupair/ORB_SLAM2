@@ -25,3 +25,4 @@ lib/
 dataset/*
 dependencies/*
 *.yaml
+.idea/*
