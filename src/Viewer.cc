@@ -71,6 +71,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
     pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",mbReuseMap,true);
+    pangolin::Var<bool> menuSave("menu.Save Keyframes",false,false);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
 
     // Define Camera Render Object (for view / scene browsing)
@@ -137,6 +138,12 @@ void Viewer::Run()
         cv::Mat im = mpFrameDrawer->DrawFrame();
         cv::imshow("ORB-SLAM2: Current Frame",im);
         cv::waitKey(mT);
+
+        if (menuSave)
+        {
+            mpSystem->SaveKeyframes();
+            menuSave = false;
+        }
 
         if(menuReset)
         {

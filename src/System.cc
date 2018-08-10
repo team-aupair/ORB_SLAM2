@@ -25,6 +25,8 @@
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
+#include <ctime>
+#include <math.h>
 
 static bool has_suffix(const std::string &str, const std::string &suffix)
 {
@@ -564,6 +566,65 @@ bool System::LoadMap(const string &filename)
 Map* System::getMap()
 {
 	return mpMap;
+}
+
+void System::SaveKeyframes()
+{
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(buffer,sizeof(buffer),"%Y%m%d_%H%M%S",timeinfo);
+    string filename = "kf_";
+    filename += buffer;
+    filename += ".txt";
+
+    ofstream f;
+    f.open(filename);
+    f << fixed;
+
+    vector<ORB_SLAM2::KeyFrame*> vpKFS = mpMap->GetAllKeyFrames();
+    for (auto it:vpKFS)
+    {
+        f << it->mnFrameId << '\t';
+
+        cv::Mat Tcw = it->GetPose();
+
+        float rot_[] = {Tcw.at<float>(0, 0), Tcw.at<float>(0, 2), -Tcw.at<float>(0, 1), Tcw.at<float>(0, 3),
+          		Tcw.at<float>(1, 0), Tcw.at<float>(1, 2), -Tcw.at<float>(1, 1), Tcw.at<float>(1, 3),
+          		Tcw.at<float>(2, 0), Tcw.at<float>(2, 2), -Tcw.at<float>(2, 1), Tcw.at<float>(2, 3),
+          		0.0, 0.0, 0.0, 1.0};
+        cv::Mat rot = cv::Mat(4, 4, Tcw.type(), rot_);
+        rot = rot.inv();
+
+        float sy = sqrt(rot.at<float>(0,0) * rot.at<float>(0,0) +  rot.at<float>(1,0) * rot.at<float>(1,0) );
+        bool singular = sy < 1e-6; // If
+
+        float x, y, z;
+        x = atan2(rot.at<float>(2,1) , rot.at<float>(2,2));
+        y = atan2(-rot.at<float>(2,0), sy);
+        if (!singular)
+            z = atan2(rot.at<float>(1,0), rot.at<float>(0,0));
+        else
+            z = 0.0;
+
+        // TODO: format
+        // TODO: fixme
+//        f << rot << endl;
+        f << ", "<< rot.at<float>(0, 3) << ' ';
+        f << ", "<< rot.at<float>(1, 3) << ' ';
+//        f << ", "<< x << ' ';
+//        f << ", "<< y << ' ';
+        f << ", "<< z << ' ';
+//        f << "1,0: "<< rot.at<float>(1,0) << " 0,0: " <<rot.at<float>(0,0) << " sy: " << sy;
+
+        f << endl;
+    }
+
+    f.close();
+
+    cout << "keyframes saved" << endl;
 }
 
 } //namespace ORB_SLAM
