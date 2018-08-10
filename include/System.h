@@ -124,6 +124,8 @@ public:
 	// ADDED
 	Map* getMap();
 
+	void SaveKeyframes();
+
 private:
     // Save/Load functions
     void SaveMap(const string &filename);
