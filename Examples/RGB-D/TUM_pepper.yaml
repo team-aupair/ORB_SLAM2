@@ -16,8 +16,8 @@ Camera.p1: 0.0
 Camera.p2: 0.0
 Camera.k3: 1.8310107541405036
 
-Camera.width: 320
-Camera.height: 240
+Camera.width: 640
+Camera.height: 480
 
 # Camera frames per second 
 Camera.fps: 20.0
@@ -39,25 +39,25 @@ DepthMapFactor: 5000.0
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 2000
-#ORBextractor.nFeatures: 1000
+#ORBextractor.nFeatures: 2000
+ORBextractor.nFeatures: 1000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid 	
-#ORBextractor.scaleFactor: 1.2
-ORBextractor.scaleFactor: 1.1
+ORBextractor.scaleFactor: 1.2
+#ORBextractor.scaleFactor: 1.1
 
 # ORB Extractor: Number of levels in the scale pyramid	
-ORBextractor.nLevels: 10
-#ORBextractor.nLevels: 8
+#ORBextractor.nLevels: 10
+ORBextractor.nLevels: 8
 
 # ORB Extractor: Fast threshold
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
 # You can lower these values if your images have low contrast			
-#ORBextractor.iniThFAST: 20
-#ORBextractor.minThFAST: 7
-ORBextractor.iniThFAST: 10
-ORBextractor.minThFAST: 4
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+#ORBextractor.iniThFAST: 10
+#ORBextractor.minThFAST: 4
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
@@ -76,7 +76,7 @@ Viewer.ViewpointF: 500
 #--------------------------------------------------------------------------------------------
 # Map Parapeters
 #--------------------------------------------------------------------------------------------
-Map.mapfile: /home/cylee/ORB_SLAM2/map.bin
+Map.mapfile: /home/cytlee/ORB_SLAM2/map.bin
 #Map.scale: 5.33138416756
 #Map.translation: [-2.64849177, -0.97826562, 0.16823239]
 #Map.quaternion: [0.05057477, 0.00608018, 0.53254777, 0.84486573]
