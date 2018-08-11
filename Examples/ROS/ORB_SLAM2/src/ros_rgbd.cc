@@ -94,7 +94,7 @@ void publish_points(visualization_msgs::Marker& points, float x, float y, float 
         c.g = 0.0;
         c.b = 0.0;
     }
-    elif(s == 11){
+    else if(s == 11){
         c.r = 0.7;
         c.g = 0.0;
         c.b = 0.0;
@@ -167,7 +167,7 @@ void get_map_points(visualization_msgs::Marker& points)
 
 cv::Mat getObjImg(cv::Mat& img, vector<pepper_obj_msgs::objs>& obj_list)
 {
-    string[] rYoloClasses = {
+    vector<string> vYoloClasses{
         "person", "bottle", "chair", "diningtable", "tvmonitor", "keyboard", "clock", "sofa", "refrigerator", "teddy bear",
         "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light",
         "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
@@ -184,7 +184,7 @@ cv::Mat getObjImg(cv::Mat& img, vector<pepper_obj_msgs::objs>& obj_list)
         pepper_obj_msgs::objs obj = obj_list[i];
         int color = 0;
 
-        color = rYoloClasses.index(obj.class_string) + 1
+        color = find(vYoloClasses.begin(), vYoloClasses.end(), obj.class_string) - vYoloClasses.begin() + 1;
 //        if (obj.class_string == "person") color = 1;
 //        else if (obj.class_string == "bottle") color = 2;
 //        else if (obj.class_string == "chair") color = 3;
