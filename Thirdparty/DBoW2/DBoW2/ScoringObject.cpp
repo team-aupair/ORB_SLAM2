@@ -38,7 +38,7 @@ double L1Scoring::score(const BowVector &v1, const BowVector &v2) const
         
         if(v1_it->first == v2_it->first)
         {
-            score += fmin(vi, wi) * -2;
+            score += fmin(vi, wi);
             
             // move v1 and v2 forward
             ++v1_it;
@@ -62,7 +62,7 @@ double L1Scoring::score(const BowVector &v1, const BowVector &v2) const
     //		for all i | v_i != 0 and w_i != 0 
     // (Nister, 2006)
     // scaled_||v - w||_{L1} = 1 - 0.5 * ||v - w||_{L1}
-    score = -score/2.0;
+    score = 1 + score;
 
     return score; // [0..1]
 }

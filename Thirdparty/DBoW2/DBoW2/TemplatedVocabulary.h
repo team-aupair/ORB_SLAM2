@@ -348,16 +348,6 @@ void TemplatedVocabulary<TDescriptor,F>::setWeightingType(WeightingType type)
 // --------------------------------------------------------------------------
 
 template<class TDescriptor, class F>
-TemplatedVocabulary<TDescriptor,F>::TemplatedVocabulary(
-  const TemplatedVocabulary<TDescriptor, F> &voc)
-  : m_scoring_object(NULL)
-{
-  *this = voc;
-}
-
-// --------------------------------------------------------------------------
-
-template<class TDescriptor, class F>
 TemplatedVocabulary<TDescriptor,F>::~TemplatedVocabulary()
 {
   delete m_scoring_object;
@@ -558,9 +548,6 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
     }
 
     // normalize
-    LNorm norm;
-    bool must = m_scoring_object->mustNormalize(norm);
-
 	typename vector<TDescriptor>::const_iterator fit;
 
     for(fit = features.begin(); fit < features.end(); ++fit)
@@ -575,7 +562,7 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
         if(w > 0) v.addWeight(id, w);
     }
 
-    v.normalize(norm);
+    v.normalize(L1);
 }
 
 // --------------------------------------------------------------------------
@@ -594,9 +581,6 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
     }
 
     // normalize
-    LNorm norm;
-    bool must = m_scoring_object->mustNormalize(norm);
-
     typename vector<TDescriptor>::const_iterator fit;
 
     unsigned int i_feature = 0;
@@ -616,9 +600,9 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
         }
 
         // add yolo result as feature
-//        cv::Mat desc = *fit;
-//        int yolo_index = desc.at<unsigned char>(0, 32);
-        int yolo_index = fit->at<uint8_t>(0, 32);
+        cv::Mat desc = *fit;
+        int yolo_index = desc.at<unsigned char>(0, 32);
+        //int yolo_index = fit->at<uint8_t>(0, 32);
         if (yolo_index != 0 && yolo_index != 1)
         {
             NodeId yoloid = yolo_index + m_words.size();
@@ -627,7 +611,7 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
         }
     }
 
-    v.normalize(norm);
+    v.normalize(L1);
 }
 
 // --------------------------------------------------------------------------
