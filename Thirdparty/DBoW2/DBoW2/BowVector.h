@@ -29,27 +29,18 @@ typedef unsigned int NodeId;
 enum LNorm
 {
   L1,
-  L2
 };
 
 /// Weighting type
 enum WeightingType
 {
   TF_IDF,
-  TF,
-  IDF,
-  BINARY
 };
 
 /// Scoring type
 enum ScoringType
 {
   L1_NORM,
-  L2_NORM,
-  CHI_SQUARE,
-  KL,
-  BHATTACHARYYA,
-  DOT_PRODUCT,
 };
 
 /// Vector of words to represent images
@@ -95,13 +86,6 @@ public:
 	 * @param v
 	 */
 	friend std::ostream& operator<<(std::ostream &out, const BowVector &v);
-	
-	/**
-	 * Saves the bow vector as a vector in a matlab file
-	 * @param filename
-	 * @param W number of words in the vocabulary
-	 */
-	void saveM(const std::string &filename, size_t W) const;
 };
 
 } // namespace DBoW2

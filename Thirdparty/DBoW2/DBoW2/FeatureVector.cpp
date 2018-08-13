@@ -46,40 +46,4 @@ void FeatureVector::addFeature(NodeId id, unsigned int i_feature)
 
 // ---------------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream &out, 
-  const FeatureVector &v)
-{
-  if(!v.empty())
-  {
-    FeatureVector::const_iterator vit = v.begin();
-    
-    const std::vector<unsigned int>* f = &vit->second;
-
-    out << "<" << vit->first << ": [";
-    if(!f->empty()) out << (*f)[0];
-    for(unsigned int i = 1; i < f->size(); ++i)
-    {
-      out << ", " << (*f)[i];
-    }
-    out << "]>";
-    
-    for(++vit; vit != v.end(); ++vit)
-    {
-      f = &vit->second;
-      
-      out << ", <" << vit->first << ": [";
-      if(!f->empty()) out << (*f)[0];
-      for(unsigned int i = 1; i < f->size(); ++i)
-      {
-        out << ", " << (*f)[i];
-      }
-      out << "]>";
-    }
-  }
-  
-  return out;  
-}
-
-// ---------------------------------------------------------------------------
-
 } // namespace DBoW2

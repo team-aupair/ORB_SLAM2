@@ -1,3 +1,4 @@
+#!/bin/sh
 echo "Configuring and building Thirdparty/DBoW2 ..."
 
 cd Thirdparty/DBoW2
@@ -30,9 +31,4 @@ cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 
-cd ..
-
-cd Vocabulary
-echo "Converting vocabulary to binary version"
-./bin_vocabulary
 cd ..

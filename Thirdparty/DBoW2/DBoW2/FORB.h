@@ -31,14 +31,6 @@ public:
   static const int L;
 
   /**
-   * Calculates the mean value of a set of descriptors
-   * @param descriptors
-   * @param mean mean descriptor
-   */
-  static void meanValue(const std::vector<pDescriptor> &descriptors,
-    TDescriptor &mean);
-
-  /**
    * Calculates the distance between two descriptors
    * @param a
    * @param b

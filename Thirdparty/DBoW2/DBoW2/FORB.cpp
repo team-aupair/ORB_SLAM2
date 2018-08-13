@@ -25,57 +25,6 @@ namespace DBoW2 {
 
 const int FORB::L=32;
 
-void FORB::meanValue(const std::vector<FORB::pDescriptor> &descriptors, 
-  FORB::TDescriptor &mean)
-{
-  if(descriptors.empty())
-  {
-    mean.release();
-    return;
-  }
-  else if(descriptors.size() == 1)
-  {
-    mean = descriptors[0]->clone();
-  }
-  else
-  {
-    vector<int> sum(FORB::L * 8, 0);
-    
-    for(size_t i = 0; i < descriptors.size(); ++i)
-    {
-      const cv::Mat &d = *descriptors[i];
-      const unsigned char *p = d.ptr<unsigned char>();
-      
-      for(int j = 0; j < d.cols; ++j, ++p)
-      {
-        if(*p & (1 << 7)) ++sum[ j*8     ];
-        if(*p & (1 << 6)) ++sum[ j*8 + 1 ];
-        if(*p & (1 << 5)) ++sum[ j*8 + 2 ];
-        if(*p & (1 << 4)) ++sum[ j*8 + 3 ];
-        if(*p & (1 << 3)) ++sum[ j*8 + 4 ];
-        if(*p & (1 << 2)) ++sum[ j*8 + 5 ];
-        if(*p & (1 << 1)) ++sum[ j*8 + 6 ];
-        if(*p & (1))      ++sum[ j*8 + 7 ];
-      }
-    }
-    
-    mean = cv::Mat::zeros(1, FORB::L, CV_8U);
-    unsigned char *p = mean.ptr<unsigned char>();
-    
-    const int N2 = (int)descriptors.size() / 2 + descriptors.size() % 2;
-    for(size_t i = 0; i < sum.size(); ++i)
-    {
-      if(sum[i] >= N2)
-      {
-        // set bit
-        *p |= 1 << (7 - (i % 8));
-      }
-      
-      if(i % 8 == 7) ++p;
-    }
-  }
-}
-
 // --------------------------------------------------------------------------
   
 int FORB::distance(const FORB::TDescriptor &a,
@@ -116,22 +65,22 @@ std::string FORB::toString(const FORB::TDescriptor &a)
 }
 
 // --------------------------------------------------------------------------
-  
+
 void FORB::fromString(FORB::TDescriptor &a, const std::string &s)
 {
   a.create(1, FORB::L, CV_8U);
   unsigned char *p = a.ptr<unsigned char>();
-  
+
   stringstream ss(s);
   for(int i = 0; i < FORB::L; ++i, ++p)
   {
     int n;
     ss >> n;
-    
-    if(!ss.fail()) 
+
+    if(!ss.fail())
       *p = (unsigned char)n;
   }
-  
+
 }
 
 // --------------------------------------------------------------------------

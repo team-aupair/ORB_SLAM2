@@ -310,49 +310,6 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
 
   	tf::Vector3 rh_cameraTranslation(pose.at<float>(0, 3)*orb_scale, pose.at<float>(1, 3)*orb_scale, pose.at<float>(2, 3)*orb_scale);
 
-
-/*	tf::Matrix3x3 rh_cameraPose_T = rh_cameraPose.inverse();
-	tf::Vector3 cameraPosition(
-	  - rh_cameraPose_T.getRow(0).dot(rh_cameraTranslation) * orb_scale,
-	  - rh_cameraPose_T.getRow(1).dot(rh_cameraTranslation) * orb_scale,
-	  - rh_cameraPose_T.getRow(2).dot(rh_cameraTranslation) * orb_scale
-	);
-
-	cv::Mat R_inv = (cv::Mat_<double>(3, 3) <<
-	   rh_cameraPose_T.getRow(0)[0], rh_cameraPose_T.getRow(0)[1], rh_cameraPose_T.getRow(0)[2],
-	   rh_cameraPose_T.getRow(1)[0], rh_cameraPose_T.getRow(1)[1], rh_cameraPose_T.getRow(1)[2],
-	   rh_cameraPose_T.getRow(2)[0], rh_cameraPose_T.getRow(2)[1], rh_cameraPose_T.getRow(2)[2]);
-
-	// pan(yaw) & tilt(pitch)
-	double unit_z[] = {0,0,1};
-	cv::Mat Zc(3, 1, CV_64FC1, unit_z);
-	cv::Mat Zw = R_inv*Zc;		// world coordinate of optical axis
-
-	double* zw = (double *)Zw.data;
-	double pan = atan2(zw[1], zw[0]) - CV_PI/2;
-	double tilt = atan2(zw[2], sqrt(zw[0]*zw[0]+zw[1]*zw[1]));
-
-	// roll
-	double unit_x[] = {1,0,0};
-	cv::Mat Xc(3, 1, CV_64FC1, unit_x);
-	cv::Mat Xw = R_inv*Xc;		// world coordinate of camera X axis
-	double* xw = (double *)Xw.data;
-	double xpan[] = {cos(pan), sin(pan), 0};
-
-	double roll = acos(xw[0]*xpan[0] + xw[1]*xpan[1] + xw[2]*xpan[2]); // inner product
-	if(xw[2]<0) roll = -roll;
-
-	tf::Matrix3x3 rotation(tf::Quaternion(pan, tilt, roll));
-        /*tf::Matrix3x3 rotation(
-            -rot_.getRow(0)[0], rot_.getRow(0)[1], rot_.getRow(0)[2],
-            -rot_.getRow(1)[0], rot_.getRow(1)[1], rot_.getRow(1)[2],
-            rot_.getRow(2)[0], -rot_.getRow(2)[1], -rot_.getRow(2)[2]);
-        tf::Matrix3x3 rotation270degZx(
-            0, 0, 1,
-            -1, 0, 0,
-            0, -1, 0);
-        rotation = rotation270degZx.inverse() * rotation;*/
-
     static tf::TransformBroadcaster br;
   	tf::Vector3 map_translation(orb_trans[0], orb_trans[1], orb_trans[2]);
   	tf::Quaternion map_quaternion(orb_quat[0], orb_quat[1], orb_quat[2], orb_quat[3]);
@@ -377,22 +334,6 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::ImageConstPtr& msgRGB,const senso
   	br.sendTransform(tf::StampedTransform(transformCamera.inverse(), ros::Time::now(), "orb_map", "orb_pose"));
 
 	//publish map
-	/*tf::TransformListener listener_link;
-	tf::TransformListener listener_pose;
-	tf::StampedTransform transform_link;
-	tf::StampedTransform transform_pose;
-	try {
-		listener_link.lookupTransform("/CameraTop_optical_frame", "/pose", ros::Time(0), transform_link);
-		listener_pose.lookupTransform("/camera_pose", "/pose", ros::Time(0), transform_pose);
-	}
-	catch (tf::TransformException ex) {
-		ROS_ERROR("%s", ex.what());
-		ros::Duration(1.0).sleep();
-	}
-
-	cout << "CAMERA_ODOM : (" << transform_link.getOrigin().x() << ", " << transform_link.getOrigin().y() << ", " << transform_link.getOrigin().z() << ")" << endl;
-	cout << "CAMERA_POSE : (" << transform_pose.getOrigin().x() << ", " << transform_pose.getOrigin().y() << ", " << transform_pose.getOrigin().z() << ")" << endl;*/
-
   	if(update_counter++ == map_update_rate) {
     		visualization_msgs::Marker points;
     		get_map_points(points);
