@@ -59,9 +59,7 @@ public:
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, bool bReuseMap=false);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
-    cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp);
     cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const cv::Mat &objmap, const double &timestamp);
-    cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
@@ -123,10 +121,6 @@ protected:
 
     // Map initialization for stereo and RGB-D
     void StereoInitialization();
-
-    // Map initialization for monocular
-    void MonocularInitialization();
-    void CreateInitialMapMonocular();
 
     void CheckReplacedInLastFrame();
     bool TrackReferenceKeyFrame();
