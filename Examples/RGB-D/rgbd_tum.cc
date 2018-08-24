@@ -31,7 +31,8 @@
 using namespace std;
 
 void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
-                vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps);
+                vector<string> &vstrImageFilenamesD, vector<string> &vstrImageFilenamesObj,
+                vector<double> &vTimestamps);
 
 int main(int argc, char **argv)
 {
@@ -44,9 +45,10 @@ int main(int argc, char **argv)
     // Retrieve paths to images
     vector<string> vstrImageFilenamesRGB;
     vector<string> vstrImageFilenamesD;
+    vector<string> vstrImageFilenamesObj;
     vector<double> vTimestamps;
     string strAssociationFilename = string(argv[4]);
-    LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vTimestamps);
+    LoadImages(strAssociationFilename, vstrImageFilenamesRGB, vstrImageFilenamesD, vstrImageFilenamesObj, vTimestamps);
 
     // Check consistency in the number of images and depthmaps
     int nImages = vstrImageFilenamesRGB.size();
@@ -60,9 +62,14 @@ int main(int argc, char **argv)
         cerr << endl << "Different number of images for rgb and depth." << endl;
         return 1;
     }
+    else if(vstrImageFilenamesObj.size()!=vstrImageFilenamesRGB.size())
+    {
+        cerr << endl << "Different number of images for rgb and obj." << endl;
+        return 1;
+    }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true,true);
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -73,12 +80,13 @@ int main(int argc, char **argv)
     cout << "Images in the sequence: " << nImages << endl << endl;
 
     // Main loop
-    cv::Mat imRGB, imD;
+    cv::Mat imRGB, imD, imObj;
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image and depthmap from file
         imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
         imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
+        imObj = cv::imread(string(argv[3])+"/"+vstrImageFilenamesObj[ni],CV_LOAD_IMAGE_UNCHANGED);
         double tframe = vTimestamps[ni];
 
         if(imRGB.empty())
@@ -95,7 +103,7 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        SLAM.TrackRGBD(imRGB,imD,imRGB,tframe);
+        SLAM.TrackRGBD(imRGB,imD,imObj,tframe);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -140,7 +148,8 @@ int main(int argc, char **argv)
 }
 
 void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
-                vector<string> &vstrImageFilenamesD, vector<double> &vTimestamps)
+                vector<string> &vstrImageFilenamesD, vector<string> &vstrImageFilenamesObj,
+                vector<double> &vTimestamps)
 {
     ifstream fAssociation;
     fAssociation.open(strAssociationFilename.c_str());
@@ -153,7 +162,7 @@ void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageF
             stringstream ss;
             ss << s;
             double t;
-            string sRGB, sD;
+            string sRGB, sD, sObj;
             ss >> t;
             vTimestamps.push_back(t);
             ss >> sRGB;
@@ -161,6 +170,9 @@ void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageF
             ss >> t;
             ss >> sD;
             vstrImageFilenamesD.push_back(sD);
+            ss >> t;
+            ss >> sObj;
+            vstrImageFilenamesObj.push_back(sObj);
 
         }
     }
