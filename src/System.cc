@@ -73,6 +73,10 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         mapfile = (string)mapfilen;
     }
 
+  	cv::FileNode map_matrix = fsSettings["Map.matrix"];
+  	for(cv::FileNodeIterator it = map_matrix.begin(); it!=map_matrix.end(); ++it)
+  	    mInitMatrix.push_back((float)*it);
+
     //Load ORB Vocabulary
     cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
@@ -379,6 +383,11 @@ void System::SaveTrajectoryTUM(const string &filename)
     list<ORB_SLAM2::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
     list<bool>::iterator lbL = mpTracker->mlbLost.begin();
+
+    cv::Mat Init = cv::Mat(4, 4, CV_32F);
+    memcpy(Init.data, mInitMatrix.data(), 16 * sizeof(float));
+    std::cout << Init << std::endl;
+
     for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(),
         lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++, lbL++)
     {
@@ -399,12 +408,25 @@ void System::SaveTrajectoryTUM(const string &filename)
         Trw = Trw*pKF->GetPose()*Two;
 
         cv::Mat Tcw = (*lit)*Trw;
+//        std::cout << "Tcw: " << Tcw << std::endl;
         cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
+//        std::cout << "Rwc: " << Rwc << std::endl;
         cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
+//        std::cout << "twc: " << twc << std::endl;
 
-        vector<float> q = Converter::toQuaternion(Rwc);
+        float rot_[] = {Rwc.at<float>(0, 0), Rwc.at<float>(0, 1), Rwc.at<float>(0, 2), twc.at<float>(0),
+          		Rwc.at<float>(1, 0), Rwc.at<float>(1, 1), Rwc.at<float>(1, 2), twc.at<float>(1),
+          		Rwc.at<float>(2, 0), Rwc.at<float>(2, 1), Rwc.at<float>(2, 2), twc.at<float>(2),
+          		0.0, 0.0, 0.0, 1.0};
+        cv::Mat rot = cv::Mat(4, 4, Tcw.type(), rot_);
+//        std::cout << "rot: " << rot << std::endl;
+        cv::Mat Twc = Init * rot;
+//        std::cout << "Twc: " << Twc << std::endl;
+        cv::Mat Rwc_ = Twc.rowRange(0,3).colRange(0,3);
 
-        f << setprecision(6) << *lT << " " <<  setprecision(9) << twc.at<float>(0) << " " << twc.at<float>(1) << " " << twc.at<float>(2) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
+        vector<float> q = Converter::toQuaternion(Rwc_);
+
+        f << setprecision(6) << *lT << " " <<  setprecision(9) << Twc.at<float>(0, 3) << " " << Twc.at<float>(1, 3) << " " << Twc.at<float>(2, 3) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
     }
     f.close();
     cout << endl << "trajectory saved!" << endl;
@@ -531,6 +553,7 @@ void System::SaveMap(const string &filename)
     cout << "Saving Mapfile: " << mapfile << std::flush;
     boost::archive::binary_oarchive oa(out, boost::archive::no_header);
     oa << mpMap;
+    cout << "HI" << endl;
     oa << mpKeyFrameDatabase;
     cout << " ...done" << std::endl;
     out.close();
@@ -602,9 +625,9 @@ void System::SaveKeyframes()
         float sy = sqrt(rot.at<float>(0,0) * rot.at<float>(0,0) +  rot.at<float>(1,0) * rot.at<float>(1,0) );
         bool singular = sy < 1e-6; // If
 
-        float x, y, z;
-        x = atan2(rot.at<float>(2,1) , rot.at<float>(2,2));
-        y = atan2(-rot.at<float>(2,0), sy);
+        float z;
+        // float x = atan2(rot.at<float>(2,1) , rot.at<float>(2,2));
+        // float y = atan2(-rot.at<float>(2,0), sy);
         if (!singular)
             z = atan2(rot.at<float>(1,0), rot.at<float>(0,0));
         else

@@ -28,11 +28,19 @@
 
 #include<System.h>
 
+#include<signal.h>
+
 using namespace std;
 
 void LoadImages(const string &strAssociationFilename, vector<string> &vstrImageFilenamesRGB,
                 vector<string> &vstrImageFilenamesD, vector<string> &vstrImageFilenamesObj,
                 vector<double> &vTimestamps);
+
+volatile sig_atomic_t flag = 0;
+
+void keyboard_inturrupt(int sig){
+    flag = 1;
+}
 
 int main(int argc, char **argv)
 {
@@ -81,8 +89,12 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat imRGB, imD, imObj;
+    signal(SIGINT, keyboard_inturrupt);
+
     for(int ni=0; ni<nImages; ni++)
     {
+        if(flag != 0)
+            break;
         // Read image and depthmap from file
         imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
         imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
