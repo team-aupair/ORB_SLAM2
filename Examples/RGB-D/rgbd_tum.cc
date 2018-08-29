@@ -44,10 +44,17 @@ void keyboard_inturrupt(int sig){
 
 int main(int argc, char **argv)
 {
-    if(argc != 5)
+    if(argc != 5 && argc != 6)
     {
-        cerr << endl << "Usage: ./rgbd_tum path_to_vocabulary path_to_settings path_to_sequence path_to_association" << endl;
+        cerr << endl << "Usage: ./rgbd_tum path_to_vocabulary path_to_settings path_to_sequence path_to_association [local]" << endl;
         return 1;
+    }
+
+    bool loc_mode = false;
+
+    if(argc == 6) {
+        cout << "[LOCALIZATION MODE]" << endl;
+        loc_mode = true;
     }
 
     // Retrieve paths to images
@@ -77,7 +84,7 @@ int main(int argc, char **argv)
     }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true,true);
+    ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::RGBD,true,!loc_mode);
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -95,6 +102,19 @@ int main(int argc, char **argv)
     int *lostnum = new int[nImages]();
     bool skip = false;
     bool last_result = false;
+
+    if (nImages > 4000) {
+        cout << "too many images. use first 5000 images only." << endl;
+        nImages = 4000;
+    }
+
+    if(loc_mode) {
+        SLAM.ActivateLocalizationMode();
+    } else {
+        SLAM.DeactivateLocalizationMode();
+    }
+
+    int fails = 0;
 
     for(int ni=0, iters=0; ni<nImages; ni++, iters++)
     {
@@ -128,14 +148,15 @@ int main(int argc, char **argv)
         cv::Mat result = SLAM.TrackRGBD(imRGB,imD,imObj,tframe);
 
         bool new_result = !result.empty();
-        if (new_result != last_result || iters % 100 == 0) {
+        if (new_result != last_result || iters % 100 == 0 || ni == lostp) {
             cout << setw(5) << ni << ' ' << setw(3) << (ni < lostp ? "loc" : "") << ": "
                 << (new_result ? " ok" : " failed") << endl;
         }
 
         last_result = new_result;
 
-        if (ni < lostp) {
+        if (loc_mode || ni < lostp) {
+            fails += !new_result;
             continue;
         }
 
@@ -147,7 +168,7 @@ int main(int argc, char **argv)
 
             // track lost -- rewind
             lostnum[ni]++;
-            if (lostnum[ni] < 5) {
+            if (lostnum[ni] < 20) {
                 lostp = ni;
 
                 ni -= 50;
@@ -189,6 +210,13 @@ int main(int argc, char **argv)
     }
 
     delete[] lostnum;
+
+    if (loc_mode) {
+        cout << endl << "=== result ===" << endl;
+        cout << "in: " << nImages << endl;
+        cout << "fail: " << fails << endl;
+        cout << "acc: " << ((float)(nImages - fails) / nImages * 100.0) << '%' << endl;
+    }
 
     // Stop all threads
     SLAM.Shutdown();

@@ -73,6 +73,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         KeyFrame* pKF = vpKFs[i];
         if(pKF->isBad())
             continue;
+        if (i % 1000 == 0)
+            std::cout << "set keyframe vertices ... " << i << std::endl;
         g2o::VertexSE3Expmap * vSE3 = new g2o::VertexSE3Expmap();
         vSE3->setEstimate(Converter::toSE3Quat(pKF->GetPose()));
         vSE3->setId(pKF->mnId);
@@ -91,6 +93,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         MapPoint* pMP = vpMP[i];
         if(pMP->isBad())
             continue;
+        if (i % 1000 == 0)
+            std::cout << "set mappoint vertices ... " << i << std::endl;
         g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
         vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos()));
         const int id = pMP->mnId+maxKFid+1;
@@ -195,6 +199,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         KeyFrame* pKF = vpKFs[i];
         if(pKF->isBad())
             continue;
+        if (i % 1000 == 0)
+            std::cout << "recover keyframe ... " << i << std::endl;
         g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
         g2o::SE3Quat SE3quat = vSE3->estimate();
         if(nLoopKF==0)
@@ -219,6 +225,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
         if(pMP->isBad())
             continue;
+        if (i % 1000 == 0)
+            std::cout << "recover point ... " << i << std::endl;
         g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
 
         if(nLoopKF==0)

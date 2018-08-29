@@ -133,7 +133,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectLoopCandidates(KeyFrame* pKF, float mi
 
             float si = mpVoc->score(pKF->mBowVec,pKFi->mBowVec);
 
-            std::cout << "score = " << si << std::endl;
+            // std::cout << "score = " << si << std::endl;
 
             pKFi->mLoopScore = si;
             if(si>=minScore)

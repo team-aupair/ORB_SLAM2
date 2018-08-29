@@ -138,7 +138,7 @@ bool LoopClosing::DetectLoop()
             minScore = score;
     }
 
-    std::cout << "minScore = " << minScore << std::endl;
+//    std::cout << "minScore = " << minScore << std::endl;
 
     // Query the database imposing the minimum score
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectLoopCandidates(mpCurrentKF, minScore);
