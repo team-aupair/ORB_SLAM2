@@ -91,7 +91,12 @@ int main(int argc, char **argv)
     cv::Mat imRGB, imD, imObj;
     signal(SIGINT, keyboard_inturrupt);
 
-    for(int ni=0; ni<nImages; ni++)
+    int lostp = -1;
+    int *lostnum = new int[nImages]();
+    bool skip = false;
+    bool last_result = false;
+
+    for(int ni=0, iters=0; ni<nImages; ni++, iters++)
     {
         if(flag != 0)
             break;
@@ -108,35 +113,82 @@ int main(int argc, char **argv)
             return 1;
         }
 
-#ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
-#endif
+//#ifdef COMPILEDWITHC11
+//        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+//#else
+//        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+//#endif
+
+        if (ni == lostp - 10) {
+            // mapping mode on
+            //SLAM.DeactivateLocalizationMode();
+        }
 
         // Pass the image to the SLAM system
-        SLAM.TrackRGBD(imRGB,imD,imObj,tframe);
+        cv::Mat result = SLAM.TrackRGBD(imRGB,imD,imObj,tframe);
 
-#ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
-#endif
+        bool new_result = !result.empty();
+        if (new_result != last_result || iters % 100 == 0) {
+            cout << setw(5) << ni << ' ' << setw(3) << (ni < lostp ? "loc" : "") << ": "
+                << (new_result ? " ok" : " failed") << endl;
+        }
 
-        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+        last_result = new_result;
 
-        vTimesTrack[ni]=ttrack;
+        if (ni < lostp) {
+            continue;
+        }
 
-        // Wait to load the next frame
-        double T=0;
-        if(ni<nImages-1)
-            T = vTimestamps[ni+1]-tframe;
-        else if(ni>0)
-            T = tframe-vTimestamps[ni-1];
+        if (result.empty()) {
+            if (skip) {
+                // hasn't been relocalized yet
+                continue;
+            }
 
-        if(ttrack<T)
-            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<size_t>((T-ttrack)*1e6)));
+            // track lost -- rewind
+            lostnum[ni]++;
+            if (lostnum[ni] < 5) {
+                lostp = ni;
+
+                ni -= 50;
+                if (ni < -1)
+                    ni = -1;
+
+                // localization mode on
+                //SLAM.ActivateLocalizationMode();
+            } else {
+                cout << "[skip after multiple failures]" << endl;
+                skip = true;
+                lostp = -1;
+            }
+            // else skip
+        } else {
+            // relocalization succeeded
+            skip = false;
+        }
+
+//#ifdef COMPILEDWITHC11
+//        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+//#else
+//        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+//#endif
+//
+//        double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
+//
+//        vTimesTrack[ni]=ttrack;
+//
+//        // Wait to load the next frame
+//        double T=0;
+//        if(ni<nImages-1)
+//            T = vTimestamps[ni+1]-tframe;
+//        else if(ni>0)
+//            T = tframe-vTimestamps[ni-1];
+//
+//        if(ttrack<T)
+//            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<size_t>((T-ttrack)*1e6)));
     }
+
+    delete[] lostnum;
 
     // Stop all threads
     SLAM.Shutdown();

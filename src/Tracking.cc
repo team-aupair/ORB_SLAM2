@@ -308,17 +308,24 @@ void Tracking::Track()
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
                     bOK = TrackReferenceKeyFrame();
+                    if (!bOK)
+                        msErrLoc = "TrackReferenceKeyFrame";
                 }
                 else
                 {
                     bOK = TrackWithMotionModel();
-                    if(!bOK)
+                    if(!bOK) {
                         bOK = TrackReferenceKeyFrame();
+                        if (!bOK)
+                            msErrLoc = "TrackWithMotionModel & TrackReferenceKeyFrame";
+                    }
                 }
             }
             else
             {
                 bOK = Relocalization();
+                if (!bOK)
+                    msErrLoc = "Relocalization";
             }
         }
         else
@@ -398,8 +405,12 @@ void Tracking::Track()
         // If we have an initial estimation of the camera pose and matching. Track the local map.
         if(!mbOnlyTracking)
         {
-            if(bOK)
+            if(bOK) {
                 bOK = TrackLocalMap();
+                if (!bOK) {
+                    msErrLoc = "TrackLocalMap";
+                }
+            }
         }
         else
         {
