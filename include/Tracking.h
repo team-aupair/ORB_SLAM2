@@ -215,6 +215,8 @@ protected:
     bool mbRGB;
 
     list<MapPoint*> mlpTemporalPoints;
+
+    string msErrLoc;
 };
 
 } //namespace ORB_SLAM
