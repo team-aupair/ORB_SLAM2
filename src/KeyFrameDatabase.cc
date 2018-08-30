@@ -308,6 +308,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         }
     }
 
+//    std::cout << "Candidates: " << vpRelocCandidates.size() << std::endl;
     return vpRelocCandidates;
 }
 

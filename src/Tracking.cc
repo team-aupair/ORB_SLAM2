@@ -1366,7 +1366,7 @@ bool Tracking::Relocalization()
 
     // We perform first an ORB matching with each candidate
     // If enough matches are found we setup a PnP solver
-    ORBmatcher matcher(0.75,true);
+    ORBmatcher matcher(0.95,true);
 
     vector<PnPsolver*> vpPnPsolvers;
     vpPnPsolvers.resize(nKFs);
@@ -1387,9 +1387,11 @@ bool Tracking::Relocalization()
         else
         {
             int nmatches = matcher.SearchByBoW(pKF,mCurrentFrame,vvpMapPointMatches[i]);
-            if(nmatches<15)
+//            std::cout << "nmatches: " << nmatches << std::endl;
+            if(nmatches<0)
             {
                 vbDiscarded[i] = true;
+//                std::cout << "------------------------- nmatches failed!" << std::endl;
                 continue;
             }
             else
@@ -1405,7 +1407,8 @@ bool Tracking::Relocalization()
     // Alternatively perform some iterations of P4P RANSAC
     // Until we found a camera pose supported by enough inliers
     bool bMatch = false;
-    ORBmatcher matcher2(0.9,true);
+    ORBmatcher matcher2(0.97,true);
+//    std::cout << "nCandiates: " << nCandidates << std::endl;
 
     while(nCandidates>0 && !bMatch)
     {
@@ -1420,7 +1423,7 @@ bool Tracking::Relocalization()
             bool bNoMore;
 
             PnPsolver* pSolver = vpPnPsolvers[i];
-            cv::Mat Tcw = pSolver->iterate(5,bNoMore,vbInliers,nInliers);
+            cv::Mat Tcw = pSolver->iterate(10,bNoMore,vbInliers,nInliers);
 
             // If Ransac reachs max. iterations discard keyframe
             if(bNoMore)
@@ -1432,6 +1435,7 @@ bool Tracking::Relocalization()
             // If a Camera Pose is computed, optimize
             if(!Tcw.empty())
             {
+//                std::cout << "Computed!" << std::endl;
                 Tcw.copyTo(mCurrentFrame.mTcw);
 
                 set<MapPoint*> sFound;
@@ -1450,6 +1454,7 @@ bool Tracking::Relocalization()
                 }
 
                 int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+//                std::cout << "nGood 1: " << nGood << std::endl;
 
                 if(nGood<10)
                     continue;
@@ -1459,17 +1464,18 @@ bool Tracking::Relocalization()
                         mCurrentFrame.mvpMapPoints[io]=static_cast<MapPoint*>(NULL);
 
                 // If few inliers, search by projection in a coarse window and optimize again
-                if(nGood<50)
+                if(nGood<30)
                 {
                     int nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,10,100);
 
-                    if(nadditional+nGood>=50)
+                    if(nadditional+nGood>=30)
                     {
                         nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+//                        std::cout << "nGood 2: " << nGood << std::endl;
 
                         // If many inliers but still not enough, search by projection again in a narrower window
                         // the camera has been already optimized with many points
-                        if(nGood>30 && nGood<50)
+                        if(nGood>20 && nGood<30)
                         {
                             sFound.clear();
                             for(int ip =0; ip<mCurrentFrame.N; ip++)
@@ -1478,9 +1484,10 @@ bool Tracking::Relocalization()
                             nadditional =matcher2.SearchByProjection(mCurrentFrame,vpCandidateKFs[i],sFound,3,64);
 
                             // Final optimization
-                            if(nGood+nadditional>=50)
+                            if(nGood+nadditional>=30)
                             {
                                 nGood = Optimizer::PoseOptimization(&mCurrentFrame);
+//                                std::cout << "nGood 3: " << nGood << std::endl;
 
                                 for(int io =0; io<mCurrentFrame.N; io++)
                                     if(mCurrentFrame.mvbOutlier[io])
@@ -1492,11 +1499,15 @@ bool Tracking::Relocalization()
 
 
                 // If the pose is supported by enough inliers stop ransacs and continue
-                if(nGood>=50)
+                if(nGood>=30)
                 {
                     bMatch = true;
                     break;
+                } else {
+//                    std::cout << "------------------------- nGood failed!" << std::endl;
                 }
+            } else {
+//                std::cout << "------------------------- Not Computed!" << std::endl;
             }
         }
     }
