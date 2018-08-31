@@ -34,7 +34,7 @@ namespace ORB_SLAM2
 KeyFrameDatabase::KeyFrameDatabase (ORBVocabulary *voc):
     mpVoc(voc)
 {
-    mvInvertedFile.resize(voc->size() + 100);
+    mvInvertedFile.resize(voc->size() + 10000);
 }
 
 
@@ -70,7 +70,7 @@ void KeyFrameDatabase::erase(KeyFrame* pKF)
 void KeyFrameDatabase::clear()
 {
     mvInvertedFile.clear();
-    mvInvertedFile.resize(mpVoc->size() + 100);
+    mvInvertedFile.resize(mpVoc->size() + 10000);
 }
 
 

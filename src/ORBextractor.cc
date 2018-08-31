@@ -143,9 +143,13 @@ static void computeOrbDescriptor(const KeyPoint& kpt,
 
         desc[i] = (uchar)val;
     }
-    desc[32] = objmap.at<uchar>(cvRound(kpt.pt.y), cvRound(kpt.pt.x));
+    ((unsigned short *)desc)[16] = objmap.at<uint16_t>(cvRound(kpt.pt.y), cvRound(kpt.pt.x));
     //std::bitset<8> val_(*desc+32);
-    //std::cout << "val: ..." << val_ << std::endl;
+    //std::bitset<8> val__(*desc+33);
+    //unsigned val_ = desc[32];
+    //unsigned val__ = desc[33];
+    //std::cout << "val: ..." << val_ << " || "<< val__ << std::endl;
+    //std::cout << "objmat: " << objmap.at<uint16_t>(cvRound(kpt.pt.y), cvRound(kpt.pt.x)) << std::endl;
     #undef GET_VALUE
 }
 
@@ -1038,7 +1042,7 @@ void ORBextractor::ComputeKeyPointsOld(std::vector<std::vector<KeyPoint> > &allK
 static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
                                const vector<Point>& pattern, const Mat& objmap)
 {
-    descriptors = Mat::zeros((int)keypoints.size(), 33, CV_8UC1);
+    descriptors = Mat::zeros((int)keypoints.size(), 34, CV_8UC1);
 
     for (size_t i = 0; i < keypoints.size(); i++)
         computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr<uchar>((int)i), objmap);
@@ -1076,7 +1080,7 @@ void ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPo
         _descriptors.release();
     else
     {
-        _descriptors.create(nkeypoints, 33, CV_8U);
+        _descriptors.create(nkeypoints, 34, CV_8U);
         descriptors = _descriptors.getMat();
     }
 

@@ -1177,13 +1177,14 @@ void TemplatedVocabulary<TDescriptor,F>::transform(
 
 //      int yolo_index = (*fit).at<uint8_t>(1, 32);
       cv::Mat desc = *fit;
-      int yolo_index = desc.at<unsigned char>(0, 32);
-      if (yolo_index != 0 && yolo_index != 1)
-      {
-        NodeId yoloid = yolo_index + m_words.size();
-        v.addWeight(yoloid, 1.0);
-        fv.addFeature(yoloid, i_feature);
-      }
+      int yolo_index = desc.at<unsigned short>(0, 16);
+//      std::cout << "yolo index: " << yolo_index << std::endl;
+      NodeId yoloid = yolo_index + m_words.size();
+      v.addWeight(yoloid, 1.0);
+      fv.addFeature(yoloid, i_feature);
+//      if (yolo_index != 0 && yolo_index != 1)
+//      {
+//      }
     }
 
     if(!v.empty() && !must)
