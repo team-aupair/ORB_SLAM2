@@ -100,6 +100,7 @@ int main(int argc, char **argv)
 
     int lostp = -1;
     int *lostnum = new int[nImages]();
+    bool *skipped = new bool[nImages]();
     bool skip = false;
     bool last_result = false;
 
@@ -120,6 +121,10 @@ int main(int argc, char **argv)
     {
         if(flag != 0)
             break;
+
+        if (skipped[ni])
+            continue;
+
         // Read image and depthmap from file
         imRGB = cv::imread(string(argv[3])+"/"+vstrImageFilenamesRGB[ni],CV_LOAD_IMAGE_UNCHANGED);
         imD = cv::imread(string(argv[3])+"/"+vstrImageFilenamesD[ni],CV_LOAD_IMAGE_UNCHANGED);
@@ -168,9 +173,9 @@ int main(int argc, char **argv)
 
             // track lost -- rewind
             lostnum[ni]++;
-            if (lostnum[ni] < 20) {
+            if (lostnum[ni] < 5) {
+                // replay
                 lostp = ni;
-
                 ni -= 50;
                 if (ni < -1)
                     ni = -1;
@@ -180,7 +185,12 @@ int main(int argc, char **argv)
             } else {
                 cout << "[skip after multiple failures]" << endl;
                 skip = true;
-                lostp = -1;
+                skipped[ni] = true;
+
+                // replay; this time WITHOUT the problematic frame
+                ni -= 50;
+                if (ni < -1)
+                    ni = -1;
             }
             // else skip
         } else {
@@ -210,6 +220,7 @@ int main(int argc, char **argv)
     }
 
     delete[] lostnum;
+    delete[] skipped;
 
     if (loc_mode) {
         cout << endl << "=== result ===" << endl;
