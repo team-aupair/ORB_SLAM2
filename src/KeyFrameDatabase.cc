@@ -289,6 +289,11 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
             bestAccScore=accScore;
     }
 
+    // sort by score
+    lAccScoreAndMatch.sort([](pair<float, KeyFrame*> &a, pair<float, KeyFrame*> &b) -> bool {
+        return a.first > b.first;
+    });
+
     // Return all those keyframes with a score higher than 0.75*bestScore
     float minScoreToRetain = 0.75f*bestAccScore;
     set<KeyFrame*> spAlreadyAddedKF;
