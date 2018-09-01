@@ -101,6 +101,7 @@ int main(int argc, char **argv)
     int lostp = -1;
     int *lostnum = new int[nImages]();
     bool *skipped = new bool[nImages]();
+    int success = 0;
     bool skip = false;
     bool last_result = false;
 
@@ -196,6 +197,7 @@ int main(int argc, char **argv)
         } else {
             // relocalization succeeded
             skip = false;
+            success++;
         }
 
 //#ifdef COMPILEDWITHC11
@@ -245,7 +247,13 @@ int main(int argc, char **argv)
 
     // Save camera trajectory
     SLAM.SaveTrajectoryTUM("CameraTrajectory.txt");
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");   
+    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+
+    if (!loc_mode) {
+        std::ofstream outfile;
+        outfile.open("CameraTrajectory.txt", std::ios_base::app);
+        outfile << "success: " << ((float)success / nImages);
+    }
 
     return 0;
 }
